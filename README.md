@@ -27,22 +27,20 @@
 
 ### Available Screens & Services
 * 🕒 **Internet Clock:** Auto-syncs time and date based on your location.
-* 📅 **Calendar & Holidays:** Displays the current date, a full monthly grid, and tracks national public holidays based on your country.
+* 📅 **Calendar:** Displays the current date and a full monthly grid.
 * 🌤️ **Weather Station:** Live Temperature, Humidity, and Forecasts (via Open-Meteo). Choose a "With Header" or "No Header" layout, each with its own set of up to 3 or 6 selectable extra values (Feels Like, Humidity, Wind, Precipitation, Pressure, Visibility).
 * 🍃 **Air Quality:** Monitor local AQI levels (US & EU Standards), with the same "With/No Header" layout choice and up to 3 or 6 selectable pollutant readings (PM2.5, PM10, NO2, CO, CO2, SO2, Ozone, Dust, UV Index, Methane).
 * ☀️ **Daylight Info:** Tracks sunrise, sunset, solar noon, and day length.
 * 🌑 **Moon Info:** Tracks the current lunar phase, illumination percentage, and precise moonrise/moonset times with dynamically rendered graphics.
 * 🌍 **Population Info:** Live dashboard displaying a second-by-second calculated world and country population ticker with annual growth rates.
 * 🛩️ **Flight Radar:** Track nearby aircraft by callsign, altitude, speed, distance, track, type, or route. Switch between a live multi-aircraft **Radar** view or a dedicated **Closest Aircraft** dashboard, in Aviation (kt/ft) or Metric (km/h/m) units.
-* 📊 **Stock Tracker:** Track market data for **up to 5** global assets, ETFs, and Mega-Cap Tech at once with daily trend indicators.
-* 📈 **Crypto Tracker:** Watch **up to 5** of your favorite coins (from top 75 global cryptos) with price and trend indicators.
 * 💱 **Currency Tracker:** Track exchange rates for **up to 5** fiat currency pairs with custom scaling multipliers.
 * 🖥️ **PC Hardware Monitor:** Connects via **USB** or **Wirelessly** to your Windows/Mac/Linux computer to show CPU Load, RAM Usage, and Network Speeds in real-time!
 * 🎧 **PC Media:** Displays currently playing track, artist, album, and playback status streamed directly from your connected computer.
 * 🖨️ **Bambu 3D Printer:** Local network telemetry for your Bambu Lab printer (progress, temperatures, fans, and print status) featuring smart layouts for IDLE and PRINTING modes.
 
 ### ✨ Key Features
-* **🧩 Modular Dashboard:** The heart of Tinytosh. Enable or disable any of the screens above to build exactly the device you want — a full 14-screen rotation, a dedicated crypto ticker, or anything in between. Toggle screens on/off instantly via the Web Panel or PC App, no reflashing required.
+* **🧩 Modular Dashboard:** The heart of Tinytosh. Enable or disable any of the screens above to build exactly the device you want — a full 12-screen rotation, a dedicated clock, or anything in between. Toggle screens on/off instantly via the Web Panel or PC App, no reflashing required.
 * **🎛️ Per-Screen Configuration:** It's not just *which* screens you show — it's *how* they look. Every screen has its own dedicated settings (units, minimal vs. full layouts, with/without header modes, full names vs. compact tickers, and more), so each one behaves exactly the way you prefer.
 * **🎨 OLED Theme Engine:** Procedural design system. Pick 4 base colors, and the engine automatically calculates all hover states, UI borders, and muted text tones for both the Web Panel and PC app!
 * **🔌 Hardware Setup:** Customize your I2C pinout, and choose whether your button is a Touch Sensor or a physical Switch (plus its GPIO pin), directly from the Web Panel without touching the code.
@@ -51,7 +49,7 @@
 * **🔀 Drag & Drop Reordering:** Fully customize your display sequence. Grab and drag screens to change their order. The configuration UI dynamically rearranges itself to match your custom layout perfectly.
 * **👆 Button Controls:** Supports an optional TTP223 touch sensor *or* a physical momentary switch — just pick which one you wired in Hardware Setup. **Single Tap** to advance to the next screen (or wake the display), **Double Tap** to jump back to the previous one, and **Long Press** to lock/unlock auto-rotation to keep your favorite screen visible indefinitely.
 * **👻 Smart Auto-Hide:** PC Monitor and PC Media screens can intelligently hide themselves and skip rotation when your PC is off, disconnected, or no media is playing.
-* **⏱️ Custom Data Sync Intervals:** Override the global refresh rate on a per-screen basis. Set Weather, Air Quality, Stocks, Crypto, or Currency to sync more (or less) often than the rest of your dashboard.
+* **⏱️ Custom Data Sync Intervals:** Override the global refresh rate on a per-screen basis. Set Weather, Air Quality, or Currency to sync more (or less) often than the rest of your dashboard.
 * **🌙 Night Mode & Power Saving:** Set a quiet schedule to minimize sleep distractions. Choose between *Dim Display*, *Turn Display Off*, or *Dim then Turn Off* (featuring an extra time picker for gradual dimming). Features "Smart Latching" (waits for the primary screen before sleeping), 10x slower background API fetching to save power, and a temporary 30-second wake feature via the physical button.
 * **🆓 Zero Config APIs:** Uses free public APIs. No API keys required.
 * **🔒 Privacy First:** No accounts, no cloud tracking. Everything runs locally on the ESP32.
@@ -70,7 +68,7 @@ For developers, makers, and the curious, here is how the magic happens. The proj
 The firmware is designed to be **non-blocking** and **modular**.
 * **🧱 Service-Oriented Architecture:** Firmware logic is split into focused, single-responsibility services (`DisplayService`, `TimeService`, `DataSyncService`, `HardwareService`, `NightModeService`, and more) instead of one monolithic sketch — keeping the codebase easy to read, extend, and hack on.
 * **⚡ Async RTOS:** Employs background FreeRTOS tasks to fetch API data asynchronously. The display and animations stay buttery smooth at 60fps without ever freezing to download data.
-* **⏱️ Granular Data Scheduling:** A dedicated `DataSyncService` tracks fetch timing independently per screen, so Weather, AQI, Stocks, Crypto, and Currency can each sync on their own custom interval instead of a single global timer.
+* **⏱️ Granular Data Scheduling:** A dedicated `DataSyncService` tracks fetch timing independently per screen, so Weather, AQI, and Currency can each sync on their own custom interval instead of a single global timer.
 * **🔄 Universal Config Sync:** The device uses a unified JSON configuration payload, allowing it to instantly accept and apply settings over the local Web Server or via the PC Serial/USB connection.
 * **🌐 mDNS Support:** Easily access the device's Web Panel without memorizing IPs using its unique local domain (e.g., `http://tinytosh-ab12.local`).
 * **🔐 Hardware Pairing Lock:** Telemetry streams are protected. Tinytosh securely pairs to the active PC to ensure multiple computers on the same network don't fight over the display.
@@ -190,11 +188,8 @@ If you encounter bugs or have feature suggestions, please [Open an Issue](https:
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 * Weather and AQI data provided by [Open-Meteo](https://open-meteo.com/).
-* Crypto data provided by [CoinLore](https://www.coinlore.com/cryptocurrency-data-api).
-* Stock data provided by [Yahoo Finance](https://finance.yahoo.com/).
 * IP Geolocation by [ip-api](https://ip-api.com/).
 * Fiat Currency data provided by [fawazahmed0/currency-api](https://github.com/fawazahmed0/exchange-api).
-* Public Holidays data provided by [Nager.Date](https://date.nager.at/).
 * Daylight data provided by [Sunrise-Sunset](https://sunrise-sunset.org/).
 * Moon Phase data provided by [US Naval Observatory](https://aa.usno.navy.mil/).
 * Population data provided by [The World Bank](https://data.worldbank.org/).

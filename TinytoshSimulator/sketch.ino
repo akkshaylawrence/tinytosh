@@ -192,7 +192,7 @@ void drawTimeScreen(const Config& config, String timeStr, String dateStr) {
     }
 }
 
-void drawCalendarScreen(const Config& config, const CalendarData& calendar) {
+void drawCalendarScreen(const Config& config) {
     display.clearDisplay();
 
     time_t now = time(nullptr);
@@ -206,19 +206,6 @@ void drawCalendarScreen(const Config& config, const CalendarData& calendar) {
 
     const char* months[] = {"JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"};
     const char* weekdays[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-
-    String todayHolidayName = "";
-    if (config.calendar_show_holidays) {
-        char todayBuf[16];
-        snprintf(todayBuf, sizeof(todayBuf), "%04d-%02d-%02d", year, mon + 1, day);
-        String todayStr = String(todayBuf);
-        for (int i = 0; i < calendar.count; i++) {
-            if (calendar.items[i].date == todayStr) {
-                todayHolidayName = calendar.items[i].name;
-                break;
-            }
-        }
-    }
 
     int colWidth = config.calendar_minimal ? 128 : 57;
 
@@ -242,55 +229,9 @@ void drawCalendarScreen(const Config& config, const CalendarData& calendar) {
     display.setCursor((colWidth - w) / 2, 53);
     display.print(year);
 
-    if (todayHolidayName != "") {
-        display.setFont(&Picopixel);
-
-        String lines[2] = {"", ""};
-        int l = 0, start = 0;
-        todayHolidayName.toUpperCase();
-
-        while (start < todayHolidayName.length() && l < 2) {
-            int spaceIdx = todayHolidayName.indexOf(' ', start);
-            if (spaceIdx == -1) spaceIdx = todayHolidayName.length();
-            String word = todayHolidayName.substring(start, spaceIdx);
-
-            String testLine = lines[l].length() == 0 ? word : lines[l] + " " + word;
-            display.getTextBounds(testLine.c_str(), 0, 0, &x1, &y1, &w, &h);
-
-            if (w > colWidth) {
-                if (lines[l].length() == 0) { lines[l] = word; l++; }
-                else { l++; if (l < 2) lines[l] = word; }
-            } else {
-                lines[l] = testLine;
-            }
-            start = spaceIdx + 1;
-        }
-
-        int numLines = (lines[1].length() > 0) ? 2 : 1;
-        int cursorY = (numLines == 1) ? 47 : 44;
-
-        for (int i = 0; i < numLines; i++) {
-            if (lines[i].length() > 0) {
-                display.getTextBounds(lines[i].c_str(), 0, 0, &x1, &y1, &w, &h);
-                bool truncated = false;
-                while (w > colWidth && lines[i].length() > 0) {
-                    lines[i] = lines[i].substring(0, lines[i].length() - 1);
-                    display.getTextBounds((lines[i] + ".").c_str(), 0, 0, &x1, &y1, &w, &h);
-                    truncated = true;
-                }
-                if (truncated) lines[i] += ".";
-
-                display.setCursor((colWidth - w) / 2, cursorY);
-                display.print(lines[i]);
-                cursorY += 6;
-            }
-        }
-        display.setFont();
-    } else {
-        display.getTextBounds(weekdays[wday], 0, 0, &x1, &y1, &w, &h);
-        display.setCursor((colWidth - w) / 2, 41);
-        display.print(weekdays[wday]);
-    }
+    display.getTextBounds(weekdays[wday], 0, 0, &x1, &y1, &w, &h);
+    display.setCursor((colWidth - w) / 2, 41);
+    display.print(weekdays[wday]);
 
     if (config.calendar_minimal) return;
 
@@ -329,28 +270,9 @@ void drawCalendarScreen(const Config& config, const CalendarData& calendar) {
     int currCol = startCol;
 
     for (int d = 1; d <= numDays; d++) {
-        char dateBuf[16];
-        snprintf(dateBuf, sizeof(dateBuf), "%04d-%02d-%02d", year, mon + 1, d);
-        String dateStr = String(dateBuf);
-
-        bool isHoliday = false;
-        if (config.calendar_show_holidays) {
-            for (int i = 0; i < calendar.count; i++) {
-                if (calendar.items[i].date == dateStr) {
-                    isHoliday = true;
-                    break;
-                }
-            }
-        }
-
         int xCenter = colCenters[currCol];
 
-        if (isHoliday) {
-            display.fillRect(xCenter - 4, rowY - 5, 9, 7, SSD1306_WHITE);
-            display.setTextColor(SSD1306_BLACK);
-        } else {
-            display.setTextColor(SSD1306_WHITE);
-        }
+        display.setTextColor(SSD1306_WHITE);
 
         String dStr = String(d);
         display.getTextBounds(dStr.c_str(), 0, 0, &x1, &y1, &w, &h);
@@ -1068,47 +990,6 @@ void drawPopulationScreen(const Config& config, const PopulationData& data) {
     }
 }
 
-void drawCryptoScreen(const Config& config, const CryptoData& data) {
-    if (!data.updated) {
-        drawInfoScreen(icon_error, "No Crypto Data");
-        return;
-    }
-
-    display.clearDisplay();
-
-    display.setTextColor(SSD1306_WHITE);
-    display.setTextWrap(false);
-    display.setTextSize(1);
-    display.setFont();
-
-    display.setTextSize(3);
-    display.setCursor(4, 6);
-    display.print(data.symbol);
-
-    if (config.crypto_fn) {
-        display.setTextSize(1);
-        display.setCursor(4, 32);
-        String displayName = data.name;
-        int maxLen = 20;
-        if (displayName.length() > maxLen) displayName = displayName.substring(0, maxLen - 3) + "...";
-        displayName.toUpperCase();
-        display.print(displayName);
-    }
-
-    display.setTextSize(2);
-    display.setCursor(4, 44);
-    display.print("$" + String(data.price_usd));
-
-    bool isPositive = (data.percent_change_24h >= 0);
-    const unsigned char* arrowIcon = isPositive ? icon_arrow_up : icon_arrow_down;
-    display.drawBitmap(102, 3, arrowIcon, 15, 15, 1);
-
-    display.setTextSize(1);
-    display.setCursor(95, 22);
-    String trendPrefix = isPositive ? "+" : "";
-    display.print(trendPrefix + String(data.percent_change_24h, 1) + "%");
-}
-
 void drawCurrencyScreen(const Config& config, const CurrencyData& data, int multiplier) {
     if (!data.updated) {
         drawInfoScreen(icon_error, "No Currency Data");
@@ -1163,47 +1044,6 @@ void drawCurrencyScreen(const Config& config, const CurrencyData& data, int mult
     int centerOfTopText = topTextX + (wTop / 2);
     display.setCursor(centerOfTopText - (wEq / 2), 19);
     display.print(eqText);
-}
-
-void drawStockScreen(const Config& config, const StockData& data) {
-    if (!data.updated) {
-        drawInfoScreen(icon_error, "No Stock Data");
-        return;
-    }
-
-    display.clearDisplay();
-
-    display.setTextColor(SSD1306_WHITE);
-    display.setTextWrap(false);
-    display.setTextSize(1);
-    display.setFont();
-
-    display.setTextSize(3);
-    display.setCursor(4, 6);
-    display.print(data.symbol);
-
-    if (config.stock_fn) {
-        display.setTextSize(1);
-        display.setCursor(4, 32);
-        String displayName = data.name;
-        int maxLen = 20;
-        if (displayName.length() > maxLen) displayName = displayName.substring(0, maxLen - 3) + "...";
-        displayName.toUpperCase();
-        display.print(displayName);
-    }
-
-    display.setTextSize(2);
-    display.setCursor(4, 44);
-    display.print("$" + String(data.price));
-
-    bool isPositive = (data.percent_change >= 0);
-    const unsigned char* arrowIcon = isPositive ? icon_arrow_up : icon_arrow_down;
-    display.drawBitmap(102, 3, arrowIcon, 15, 15, 1);
-
-    display.setTextSize(1);
-    display.setCursor(95, 22);
-    String trendPrefix = isPositive ? "+" : "";
-    display.print(trendPrefix + String(data.percent_change, 1) + "%");
 }
 
 void drawPcScreen(const PcStats& pcStats) {
@@ -2024,8 +1864,6 @@ bool isScreenEnabled(const AppState& state, int screenIndex) {
             }
             return true;
         }
-        case SCREEN_STOCK:          return config.show_stock;
-        case SCREEN_CRYPTO:         return config.show_crypto;
         case SCREEN_CURRENCY:       return config.show_currency;
         case SCREEN_PC_MONITOR: {
             if (!config.show_pc) return false;
@@ -2058,15 +1896,13 @@ bool isScreenEnabled(const AppState& state, int screenIndex) {
 void drawScreen(int screenIndex, const AppState& state, int subIndex = 0) {
     switch (screenIndex) {
         case SCREEN_TIME: drawTimeScreen(state.config, getCurrentTimeShort(state.config.time_format), getFullDate()); break;
-        case SCREEN_CALENDAR: drawCalendarScreen(state.config, state.calendar); break;
+        case SCREEN_CALENDAR: drawCalendarScreen(state.config); break;
         case SCREEN_WEATHER: drawWeatherScreen(state.config, state.weather, getCurrentTimeShort(state.config.time_format)); break;
         case SCREEN_AIR_QUALITY: drawAQIScreen(state.config, state.aqi, getCurrentTimeShort(state.config.time_format)); break;
         case SCREEN_DAYLIGHT: drawDaylightScreen(state.config, state.daylight); break;
         case SCREEN_MOON: drawMoonScreen(state.config, state.moon); break;
         case SCREEN_POPULATION: drawPopulationScreen(state.config, state.population); break;
         case SCREEN_FLIGHT: drawFlightScreen(state.config, state.flight); break;
-        case SCREEN_STOCK: drawStockScreen(state.config, state.stocks[subIndex]); break;
-        case SCREEN_CRYPTO: drawCryptoScreen(state.config, state.cryptos[subIndex]); break;
         case SCREEN_CURRENCY: drawCurrencyScreen(state.config, state.currencies[subIndex], state.config.currency_multipliers[subIndex]); break;
         case SCREEN_PC_MONITOR: drawPcScreen(state.pc); break;
         case SCREEN_PC_MEDIA: drawMediaScreen(state.media); break;
@@ -2201,16 +2037,6 @@ void animateTransition(int prevScreen, int prevSub, int nextScreen, int nextSub,
 void switchToNextScreen(const AppState& state) {
     const Config& config = state.config;
 
-    if (currentScreen == SCREEN_STOCK && currentSubScreen + 1 < config.stock_count) {
-        currentSubScreen++;
-        animateTransition(currentScreen, currentSubScreen - 1, currentScreen, currentSubScreen, state);
-        return;
-    }
-    if (currentScreen == SCREEN_CRYPTO && currentSubScreen + 1 < config.crypto_count) {
-        currentSubScreen++;
-        animateTransition(currentScreen, currentSubScreen - 1, currentScreen, currentSubScreen, state);
-        return;
-    }
     if (currentScreen == SCREEN_CURRENCY && currentSubScreen + 1 < config.currency_count) {
         currentSubScreen++;
         animateTransition(currentScreen, currentSubScreen - 1, currentScreen, currentSubScreen, state);
@@ -2249,16 +2075,6 @@ void switchToNextScreen(const AppState& state) {
 void switchToPreviousScreen(const AppState& state) {
     const Config& config = state.config;
 
-    if (currentScreen == SCREEN_STOCK && currentSubScreen > 0) {
-        currentSubScreen--;
-        animateTransition(currentScreen, currentSubScreen + 1, currentScreen, currentSubScreen, state);
-        return;
-    }
-    if (currentScreen == SCREEN_CRYPTO && currentSubScreen > 0) {
-        currentSubScreen--;
-        animateTransition(currentScreen, currentSubScreen + 1, currentScreen, currentSubScreen, state);
-        return;
-    }
     if (currentScreen == SCREEN_CURRENCY && currentSubScreen > 0) {
         currentSubScreen--;
         animateTransition(currentScreen, currentSubScreen + 1, currentScreen, currentSubScreen, state);

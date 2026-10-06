@@ -8,7 +8,7 @@ This is a [Wokwi](https://wokwi.com/) simulation of **[Tinytosh](https://github.
 
 Not everyone wants to commit to buying parts, printing a case, and wiring up an OLED before knowing if Tinytosh is for them. This simulator lets you poke around the real screen layouts, cycle through screens with the button, and get a feel for the device first — no hardware required.
 
-It's a simplified, standalone build of the display logic: no WiFi, no API calls, no settings web panel, no persistence. All the weather, air quality, stocks, crypto, flights, and everything else you see is realistic mock data hardcoded into `structs.h`, driven by the same `Config` struct and the same screen-drawing code as the real firmware. Every screen, layout option, and button gesture (single tap, double tap, long press) behaves exactly as it does on real hardware — it just isn't fetching anything live.
+It's a simplified, standalone build of the display logic: no WiFi, no API calls, no settings web panel, no persistence. All the weather, air quality, flights, and everything else you see is realistic mock data hardcoded into `structs.h`, driven by the same `Config` struct and the same screen-drawing code as the real firmware. Every screen, layout option, and button gesture (single tap, double tap, long press) behaves exactly as it does on real hardware — it just isn't fetching anything live.
 
 ## 🚀 Try it now (no install required)
 

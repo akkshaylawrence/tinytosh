@@ -26,15 +26,13 @@
                     <h3 style="margin: 0 0 10px 0; color: var(--accent);">Available Screens & Services</h3>
                     <ul class="screens-list">
                         <li>🕒 <a href="#screen-clock"><strong>Internet Clock:</strong></a> Auto-syncs time and date based on your location.</li>
-                        <li>📅 <a href="#screen-calendar"><strong>Calendar:</strong></a> Displays the current date, monthly grid, and national holidays.</li>
+                        <li>📅 <a href="#screen-calendar"><strong>Calendar:</strong></a> Displays the current date and monthly grid.</li>
                         <li>🌤️ <a href="#screen-weather"><strong>Weather Station:</strong></a> Live Temperature, Humidity, and Forecasts (via Open-Meteo).</li>
                         <li>🍃 <a href="#screen-aqi"><strong>Air Quality:</strong></a> Monitor local AQI levels (US & EU Standards).</li>
                         <li>☀️ <a href="#screen-daylight"><strong>Daylight Info:</strong></a> Tracks sunrise, sunset, solar noon, and day length.</li>
                         <li>🌑 <a href="#screen-moon"><strong>Moon Info:</strong></a> Tracks the current lunar phase, illumination, and moonrise/moonset times.</li>
                         <li>🌍 <a href="#screen-population"><strong>Population Info:</strong></a> A live, second-by-second population ticker for the world and your country.</li>
                         <li>🛩️ <a href="#screen-flight"><strong>Flight Radar:</strong></a> Track nearby aircraft by callsign, altitude, speed, and route, either as a live multi-aircraft radar or a single closest-aircraft dashboard.</li>
-                        <li>📊 <a href="#screen-stock"><strong>Stock Tracker:</strong></a> Track market data for up to 5 global assets and ETFs at once.</li>
-                        <li>📈 <a href="#screen-crypto"><strong>Crypto Tracker:</strong></a> Track up to 5 top global cryptos with price and trend indicators.</li>
                         <li>💱 <a href="#screen-currency"><strong>Currency Tracker:</strong></a> Track exchange rates for up to 5 fiat currency pairs with custom multipliers.</li>
                         <li>🖥️ <a href="#screen-pc"><strong>PC Hardware Monitor:</strong></a> Connects via USB or Wirelessly to your computer to show CPU Load, RAM, and Network Speeds!</li>
                         <li>🎵 <a href="#screen-media"><strong>PC Media:</strong></a> Displays currently playing track, artist, album, and playback status from your connected computer.</li>
@@ -460,7 +458,7 @@
                         <ul>
                             <li><strong>Switch Screens Automatically:</strong> If checked, screens rotate automatically. If unchecked, the screen stays static until you press the hardware button.</li>
                             <li><strong>Screen Cycle Interval:</strong> Time (in seconds) each screen stays visible before rotating.</li>
-                            <li><strong>Data Sync Interval:</strong> Frequency (in minutes) of data fetches for Weather, Air Quality, Crypto, Stocks, and Currencies. Need one screen to refresh faster (or slower) than the rest? Each of these screens also has its own optional <strong>Custom Sync Interval</strong> override, right in its settings section.</li>
+                            <li><strong>Data Sync Interval:</strong> Frequency (in minutes) of data fetches for Weather, Air Quality, and Currencies. Need one screen to refresh faster (or slower) than the rest? Each of these screens also has its own optional <strong>Custom Sync Interval</strong> override, right in its settings section.</li>
                         </ul>
 
                         <div class="feature-section-title">🌙 Night Mode & Power Saving</div>
@@ -469,12 +467,12 @@
                             <li><strong>Action Modes:</strong> Choose what happens during the scheduled hours: <em>No Visual Change</em>, <em>Dim Display</em> (minimum hardware contrast), <em>Turn Display Off</em> (completely black), or <em>Dim then Turn Off</em> (gradually steps down).</li>
                             <li><strong>Dim Start Time:</strong> If you select "Dim then Turn Off," an extra time picker will appear. This lets you set exactly when the screen dims before fully turning off later in the night.</li>
                             <li><strong>Smart Latching:</strong> Night Mode won't interrupt your reading. It waits patiently until the rotation naturally lands on your first (primary) screen before applying the dark settings and pausing the screen cycle.</li>
-                            <li><strong>Background Optimization:</strong> Background data fetches (Weather, Crypto, etc.) automatically slow down 10x during Night Mode to save power.</li>
+                            <li><strong>Background Optimization:</strong> Background data fetches (Weather, etc.) automatically slow down 10x during Night Mode to save power.</li>
                             <li><strong>Temporary Wake:</strong> If the screen is Off, pressing the physical button will temporarily wake the device at minimum brightness for 30 seconds so you can check the time in the dark!</li>
                         </ul>
 
                         <div class="feature-section-title">Location & Timezone</div>
-                        <p>Tinytosh uses these settings to provide accurate Clock, Weather, Air Quality, and Holiday data.</p>
+                        <p>Tinytosh uses these settings to provide accurate Clock, Weather, and Air Quality data.</p>
                         <ul>
                             <li><strong>Auto-Detect:</strong> Uses your IP address to automatically determine location, country, and timezone.</li>
                             <li><strong>Manual Entry:</strong> Override with specific City names, Latitude/Longitude coordinates, precise Country selection, and native Timezones.</li>
@@ -530,22 +528,20 @@
                     </div>
 
                     <div class="feature-item" id="screen-calendar">
-                        <div class="feature-header">📅 Calendar & Holidays</div>
+                        <div class="feature-header">📅 Calendar</div>
                         <div class="feature-section-title">Function</div>
-                        <p>Displays the current date alongside a full monthly grid and tracks national public holidays based on your country.</p>
+                        <p>Displays the current date alongside a full monthly grid.</p>
                         <div class="feature-section-title">Settings</div>
                         <ul>
                             <li><strong>Start Week On:</strong> Choose whether the calendar grid starts on Monday or Sunday.</li>
-                            <li><strong>National Holidays:</strong> Toggle the display of public holidays. When a holiday occurs, it replaces the weekday text and highlights the day on the grid.</li>
                             <li><strong>Minimalistic Mode:</strong> Hides the monthly grid entirely and beautifully centers the current day, month, and year on the screen.</li>
                         </ul>
 
                         <div class="feature-section-title">Layout</div>
                         <p>
-                            <strong>Standard:</strong> Left side displays a large day, current month, year, and weekday/holiday name. Right side displays a full month calendar with the current day boxed and holidays inverted. <br>
+                            <strong>Standard:</strong> Left side displays a large day, current month, year, and weekday name. Right side displays a full month calendar with the current day boxed. <br>
                             <strong>Minimalist:</strong> The grid is hidden, and the date column expands to fill the screen for a clean, highly readable layout.
                         </p>
-                        <span class="api-tag">Source: date.nager.at (Public Holidays)</span>
 
                         <details open>
                             <summary>📸 Screen Preview</summary>
@@ -826,76 +822,6 @@
                                             <img src="img/real_flight_closest.jpg" alt="Flight Closest Real Photo" class="real-photo">
                                         </div>
                                         <div class="assembly-caption">Closest Aircraft - Real Photo</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </details>
-                    </div>
-
-                    <div class="feature-item" id="screen-stock">
-                        <div class="feature-header">📊 Stock Tracker</div>
-                        <div class="feature-section-title">Function</div>
-                        <p>Tracks live market data for ~100 top global assets, including US Mega-Cap Tech, broad market ETFs, and international ADRs.</p>
-                        <div class="feature-section-title">Settings</div>
-                        <ul>
-                            <li><strong>Asset Selection:</strong> Track <strong>up to 5</strong> stocks/ETFs at once. The screen will automatically paginate through them during its rotation cycle!</li>
-                            <li><strong>Display Format:</strong> Toggle between showing the minimalist Ticker (e.g., AAPL) or the Full Company Name (e.g., Apple Inc.).</li>
-                            <li><strong>Custom Sync Interval:</strong> Optionally set a refresh rate for this screen that's independent of the global Data Sync Interval.</li>
-                        </ul>
-                        <div class="feature-section-title">Layout</div>
-                        <p>Shows the stock ticker/name, current price in USD, a daily trend icon, and the percentage change since the previous close.</p>
-                        <span class="api-tag">Source: query1.finance.yahoo.com</span>
-
-                        <details open>
-                            <summary>📸 Screen Preview</summary>
-                            <div class="assembly-container">
-                                <div class="assembly-grid">
-                                    <div class="assembly-item">
-                                        <div class="assembly-img-wrapper">
-                                            <img src="img/render_stock.png" alt="Stock Layout Render">
-                                        </div>
-                                        <div class="assembly-caption">Layout Render</div>
-                                    </div>
-                                    <div class="assembly-item">
-                                        <div class="assembly-img-wrapper">
-                                            <img src="img/real_stock.jpg" alt="Stock Real Photo" class="real-photo">
-                                        </div>
-                                        <div class="assembly-caption">Real Photo</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </details>
-                    </div>
-
-                    <div class="feature-item" id="screen-crypto">
-                        <div class="feature-header">📈 Crypto Tracker</div>
-                        <div class="feature-section-title">Function</div>
-                        <p>Tracks live market prices and 24-hour trends for the top 75 global cryptocurrencies.</p>
-                        <div class="feature-section-title">Settings</div>
-                        <ul>
-                            <li><strong>Coin Selection:</strong> Track <strong>up to 5</strong> coins at once. The screen will smoothly rotate through them.</li>
-                            <li><strong>Display Format:</strong> Toggle between the clean, standard Ticker (e.g., BTC) or displaying the Full Coin Name (e.g., Bitcoin).</li>
-                            <li><strong>Custom Sync Interval:</strong> Optionally set a refresh rate for this screen that's independent of the global Data Sync Interval.</li>
-                        </ul>
-                        <div class="feature-section-title">Layout</div>
-                        <p>Shows the coin ticker/name, current price in USD, a daily trend icon, and the 24h percentage change.</p>
-                        <span class="api-tag">Source: api.coinlore.net</span>
-
-                        <details open>
-                            <summary>📸 Screen Preview</summary>
-                            <div class="assembly-container">
-                                <div class="assembly-grid">
-                                    <div class="assembly-item">
-                                        <div class="assembly-img-wrapper">
-                                            <img src="img/render_crypto.png" alt="Crypto Layout Render">
-                                        </div>
-                                        <div class="assembly-caption">Layout Render</div>
-                                    </div>
-                                    <div class="assembly-item">
-                                        <div class="assembly-img-wrapper">
-                                            <img src="img/real_crypto.jpg" alt="Crypto Real Photo" class="real-photo">
-                                        </div>
-                                        <div class="assembly-caption">Real Photo</div>
                                     </div>
                                 </div>
                             </div>

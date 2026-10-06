@@ -207,12 +207,10 @@
               <li class="sortable-item" data-id="5" data-target="showMoon"><div class="order-ctrl"><span class="move-btn move-up">▲</span><span class="move-btn move-down">▼</span></div>Moon Info</li>
               <li class="sortable-item" data-id="6" data-target="showPopulation"><div class="order-ctrl"><span class="move-btn move-up">▲</span><span class="move-btn move-down">▼</span></div>Population Info</li>
               <li class="sortable-item" data-id="7" data-target="showFlight"><div class="order-ctrl"><span class="move-btn move-up">▲</span><span class="move-btn move-down">▼</span></div>Flight Radar</li>
-              <li class="sortable-item" data-id="8" data-target="showStock"><div class="order-ctrl"><span class="move-btn move-up">▲</span><span class="move-btn move-down">▼</span></div>Stock Tracking</li>
-              <li class="sortable-item" data-id="9" data-target="showCrypto"><div class="order-ctrl"><span class="move-btn move-up">▲</span><span class="move-btn move-down">▼</span></div>Crypto Tracking</li>
-              <li class="sortable-item" data-id="10" data-target="showCurrency"><div class="order-ctrl"><span class="move-btn move-up">▲</span><span class="move-btn move-down">▼</span></div>Currency Exchange</li>
-              <li class="sortable-item" data-id="11" data-target="showPc"><div class="order-ctrl"><span class="move-btn move-up">▲</span><span class="move-btn move-down">▼</span></div>PC Monitor</li>
-              <li class="sortable-item" data-id="12" data-target="showMedia"><div class="order-ctrl"><span class="move-btn move-up">▲</span><span class="move-btn move-down">▼</span></div>PC Media</li>
-              <li class="sortable-item" data-id="13" data-target="showBambu"><div class="order-ctrl"><span class="move-btn move-up">▲</span><span class="move-btn move-down">▼</span></div>Printer Info</li>
+              <li class="sortable-item" data-id="8" data-target="showCurrency"><div class="order-ctrl"><span class="move-btn move-up">▲</span><span class="move-btn move-down">▼</span></div>Currency Exchange</li>
+              <li class="sortable-item" data-id="9" data-target="showPc"><div class="order-ctrl"><span class="move-btn move-up">▲</span><span class="move-btn move-down">▼</span></div>PC Monitor</li>
+              <li class="sortable-item" data-id="10" data-target="showMedia"><div class="order-ctrl"><span class="move-btn move-up">▲</span><span class="move-btn move-down">▼</span></div>PC Media</li>
+              <li class="sortable-item" data-id="11" data-target="showBambu"><div class="order-ctrl"><span class="move-btn move-up">▲</span><span class="move-btn move-down">▼</span></div>Printer Info</li>
             </ul>
             <input type="hidden" name="screen_order" id="screenOrderInput">
           </div>
@@ -236,14 +234,12 @@
               <div id="calendarContent" class="collapsible">
                 <div class="dashboard-grid">
                   <div class="tile"><div class="tile-icon">📅</div><div class="tile-value date-val" id="preview-date">--</div><div class="tile-label">Current Date</div></div>
-                  <div class="tile"><div class="tile-icon">🎉</div><div class="tile-value" id="preview-hol" style="font-size:1.2rem">--</div><div class="tile-label">Holidays Loaded</div></div>
                 </div>
                 <label>Start Week On:</label>
                 <div class="radio-group">
                   <label class="radio-label"><input type="radio" name="cal_start" value="mon"> Monday</label>
                   <label class="radio-label"><input type="radio" name="cal_start" value="sun"> Sunday</label>
                 </div>
-                <label class="checkbox-label"><input type="checkbox" name="cal_hol"> Show National Holidays</label>
                 <label class="checkbox-label"><input type="checkbox" name="cal_min"> Minimalistic Mode (Hide grid)</label>
               </div>
             </div>
@@ -454,52 +450,6 @@
             </div>
 
             <div class="panel" id="panel-8">
-              <label class="checkbox-label mt-0"><input type="checkbox" id="showStock" name="show_stock"> Stock Tracking Screen</label>
-              <div id="stockContent" class="collapsible">
-                <div id="stock-no-data" class="no-data-tile">📈 Stock data will be available after sync</div>
-                <div id="stock-grid" class="hidden">
-                    <div class="dashboard-grid">
-                      <div class="tile"><div class="tile-icon">📊</div><div class="tile-value" id="stock-price" style="font-size:1.0rem; line-height:1.5;">--</div><div class="tile-label">PRICES</div></div>
-                      <div class="tile"><div class="tile-icon">📈</div><div class="tile-value" id="stock-change" style="font-size:1.0rem; line-height:1.5;">--</div><div class="tile-label">24H CHANGE</div></div>
-                    </div>
-                    <div class="update-footer" id="stock-upd">Last Update: --</div>
-                </div>
-                <div id="stock-list-container"></div>
-                <button type="button" class="btn-blue" onclick="addStockRow()">+ Add Stock / ETF</button>
-                <label class="checkbox-label"><input type="checkbox" name="stock_fn"> Display Full Company Name</label>
-                <hr>
-                <label class="checkbox-label"><input type="checkbox" id="customStockSyncChk"> Custom Data Sync</label>
-                <div id="customStockSyncFields" class="collapsible">
-                  <label class="mt-0">Custom Data Sync Interval (Mins):</label>
-                  <input type="number" min="1" id="customStockSyncInt" name="custom_stock_int_min">
-                </div>
-              </div>
-            </div>
-
-            <div class="panel" id="panel-9">
-              <label class="checkbox-label mt-0"><input type="checkbox" id="showCrypto" name="show_crypto"> Crypto Tracking Screen</label>
-              <div id="cryptoContent" class="collapsible">
-                <div id="crypto-no-data" class="no-data-tile">💰 Crypto data will be available after sync</div>
-                <div id="crypto-grid" class="hidden">
-                    <div class="dashboard-grid">
-                      <div class="tile"><div class="tile-icon">₿</div><div class="tile-value" id="crypto-price" style="font-size:1.0rem; line-height:1.5;">--</div><div class="tile-label">PRICES</div></div>
-                      <div class="tile"><div class="tile-icon">📈</div><div class="tile-value" id="crypto-change" style="font-size:1.0rem; line-height:1.5;">--</div><div class="tile-label">24H CHANGE</div></div>
-                    </div>
-                    <div class="update-footer" id="crypto-upd">Last Update: --</div>
-                </div>
-                <div id="crypto-list-container"></div>
-                <button type="button" class="btn-blue" onclick="addCryptoRow()">+ Add Cryptocurrency</button>
-                <label class="checkbox-label"><input type="checkbox" name="crypto_fn"> Display Full Coin Name</label>
-                <hr>
-                <label class="checkbox-label"><input type="checkbox" id="customCryptoSyncChk"> Custom Data Sync</label>
-                <div id="customCryptoSyncFields" class="collapsible">
-                  <label class="mt-0">Custom Data Sync Interval (Mins):</label>
-                  <input type="number" min="1" id="customCryptoSyncInt" name="custom_crypto_int_min">
-                </div>
-              </div>
-            </div>
-
-            <div class="panel" id="panel-10">
               <label class="checkbox-label mt-0"><input type="checkbox" id="showCurrency" name="show_currency"> Currency Exchange Screen</label>
               <div id="currencyContent" class="collapsible">
                 <div id="currency-no-data" class="no-data-tile">💱 Currency data will be available after sync</div>
@@ -522,7 +472,7 @@
               </div>
             </div>
 
-            <div class="panel" id="panel-11">
+            <div class="panel" id="panel-9">
               <label class="checkbox-label mt-0"><input type="checkbox" id="showPc" name="show_pc"> PC Monitoring Screen</label>
               <div id="pcContent" class="collapsible">
                 <div id="pc-no-data" class="no-data-tile">🖥️ PC data will be available after sync</div>
@@ -539,7 +489,7 @@
               </div>
             </div>
 
-            <div class="panel" id="panel-12">
+            <div class="panel" id="panel-10">
               <label class="checkbox-label mt-0"><input type="checkbox" id="showMedia" name="show_media"> PC Media Screen</label>
               <div id="mediaContent" class="collapsible">
                 <div id="media-no-data" class="no-data-tile">🎵 Media data will be available after sync and/or when media is played</div>
@@ -556,7 +506,7 @@
               </div>
             </div>
 
-            <div class="panel" id="panel-13">
+            <div class="panel" id="panel-11">
               <label class="checkbox-label mt-0"><input type="checkbox" id="showBambu" name="show_bambu"> Bambu 3D Printer Screen</label>
               <div id="bambuContent" class="collapsible">
                 <div id="bambu-no-data" class="no-data-tile">🖨️ Printer data will be available after connection is established</div>

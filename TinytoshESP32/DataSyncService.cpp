@@ -5,16 +5,13 @@
 #include <WiFi.h>
 
 #include "AirQualityService.h"
-#include "CalendarService.h"
 #include "ConfigManager.h"
-#include "CryptoService.h"
 #include "CurrencyService.h"
 #include "DaylightService.h"
 #include "DisplayService.h"
 #include "FlightService.h"
 #include "MoonService.h"
 #include "PopulationService.h"
-#include "StockService.h"
 #include "TimeService.h"
 #include "WeatherService.h"
 
@@ -22,14 +19,11 @@
 extern ConfigManager configManager;
 extern DisplayService displayService;
 extern TimeService timeService;
-extern CalendarService calendarService;
 extern WeatherService weatherService;
 extern AirQualityService airQualityService;
 extern DaylightService daylightService;
 extern MoonService moonService;
 extern PopulationService populationService;
-extern StockService stockService;
-extern CryptoService cryptoService;
 extern CurrencyService currencyService;
 extern FlightService flightService;
 
@@ -64,10 +58,6 @@ bool DataSyncService::isDue(ScreenType screen, const Config& config, bool nightM
             return config.show_aqi && isFetchDue(trackers.lastAqiFetch, config.custom_aqi_int_min, config, nightModeLatched);
         case SCREEN_FLIGHT:
             return config.show_flight && isFetchDue(trackers.lastFlightFetch, config.custom_flight_int_min, config, nightModeLatched);
-        case SCREEN_STOCK:
-            return config.show_stock && isFetchDue(trackers.lastStockFetch, config.custom_stock_int_min, config, nightModeLatched);
-        case SCREEN_CRYPTO:
-            return config.show_crypto && isFetchDue(trackers.lastCryptoFetch, config.custom_crypto_int_min, config, nightModeLatched);
         case SCREEN_CURRENCY:
             return config.show_currency && isFetchDue(trackers.lastCurrencyFetch, config.custom_currency_int_min, config, nightModeLatched);
         default:
@@ -81,8 +71,6 @@ void DataSyncService::markFetched(ScreenType screen) {
         case SCREEN_WEATHER: trackers.lastWeatherFetch = now; break;
         case SCREEN_AIR_QUALITY: trackers.lastAqiFetch = now; break;
         case SCREEN_FLIGHT: trackers.lastFlightFetch = now; break;
-        case SCREEN_STOCK: trackers.lastStockFetch = now; break;
-        case SCREEN_CRYPTO: trackers.lastCryptoFetch = now; break;
         case SCREEN_CURRENCY: trackers.lastCurrencyFetch = now; break;
         default: break;
     }
@@ -105,14 +93,7 @@ void DataSyncService::runFullSync(AppState& state) {
 
     struct tm timeinfo;
     getLocalTime(&timeinfo);
-    int current_year = timeinfo.tm_year + 1900;
     int current_yday = timeinfo.tm_yday;
-
-    // 3. Fetch Calendar (Holidays - Depends on Country (Country Code))
-    if (config.show_calendar && config.calendar_show_holidays && state.calendar.last_fetch_year != current_year) {
-        displayService.showOLEDStatus({"\n", "\n", "Updating Calendar...", "\n", "Country:", config.country}, true);
-        calendarService.fetchHolidays(config.country_code, state.calendar);
-    }
 
     // 4. Fetch Weather (Depends on Lat/Lon)
     if (config.show_weather) {
@@ -155,24 +136,6 @@ void DataSyncService::runFullSync(AppState& state) {
         markFetched(SCREEN_FLIGHT);
     }
 
-    // 10. Fetch Stocks (Independent)
-    if (config.show_stock) {
-        for (int i = 0; i < config.stock_count; i++) {
-            displayService.showOLEDStatus({"\n", "\n", "Updating Stocks...", "\n", "Stock:", config.stock_symbols[i]}, true);
-            stockService.fetchStock(config.stock_symbols[i], state.stocks[i]);
-        }
-        markFetched(SCREEN_STOCK);
-    }
-
-    // 11. Fetch Crypto (Independent)
-    if (config.show_crypto) {
-        for (int i = 0; i < config.crypto_count; i++) {
-            displayService.showOLEDStatus({"\n", "\n", "Updating Crypto...", "\n", "Ticker ID:", String(config.crypto_ids[i])}, true);
-            cryptoService.fetchPrice(config.crypto_ids[i], state.cryptos[i]);
-        }
-        markFetched(SCREEN_CRYPTO);
-    }
-
     // 12. Fetch Currency (Independent)
     if (config.show_currency) {
         for (int i = 0; i < config.currency_count; i++) {
@@ -201,8 +164,6 @@ void DataSyncService::maybeStartBackgroundSync(AppState& state, bool nightModeLa
         || isDue(SCREEN_WEATHER, state.config, nightModeLatched)
         || isDue(SCREEN_AIR_QUALITY, state.config, nightModeLatched)
         || isDue(SCREEN_FLIGHT, state.config, nightModeLatched)
-        || isDue(SCREEN_STOCK, state.config, nightModeLatched)
-        || isDue(SCREEN_CRYPTO, state.config, nightModeLatched)
         || isDue(SCREEN_CURRENCY, state.config, nightModeLatched);
 
     if (!anyScreenDue) return;
@@ -249,14 +210,12 @@ void DataSyncService::runBackgroundSyncBody() {
 
     struct tm timeinfo;
     getLocalTime(&timeinfo);
-    int current_year = timeinfo.tm_year + 1900;
     int current_yday = timeinfo.tm_yday;
 
-    // Daily/yearly screens are always re-checked here; they no-op internally unless the day/year rolled over.
+    // Daily screens are always re-checked here; they no-op internally unless the day rolled over.
     if (config.show_daylight && state.daylight.last_fetch_yday != current_yday) daylightService.fetchDaylight(config, state.daylight);
     if (config.show_moon && state.moon.last_fetch_yday != current_yday) moonService.fetchMoon(config, state.moon);
     if (config.show_population && state.population.last_fetch_yday != current_yday) populationService.fetchPopulation(config, state.population);
-    if (config.show_calendar && config.calendar_show_holidays && state.calendar.last_fetch_year != current_year) calendarService.fetchHolidays(config.country_code, state.calendar);
 
     // Custom-sync-eligible screens each check their own due status here.
     if (isDue(SCREEN_WEATHER, config, nightModeLatched)) {
@@ -270,14 +229,6 @@ void DataSyncService::runBackgroundSyncBody() {
     if (isDue(SCREEN_FLIGHT, config, nightModeLatched)) {
         flightService.fetchFlights(config, state.flight);
         markFetched(SCREEN_FLIGHT);
-    }
-    if (isDue(SCREEN_STOCK, config, nightModeLatched)) {
-        for (int i = 0; i < config.stock_count; i++) stockService.fetchStock(config.stock_symbols[i], state.stocks[i]);
-        markFetched(SCREEN_STOCK);
-    }
-    if (isDue(SCREEN_CRYPTO, config, nightModeLatched)) {
-        for (int i = 0; i < config.crypto_count; i++) cryptoService.fetchPrice(config.crypto_ids[i], state.cryptos[i]);
-        markFetched(SCREEN_CRYPTO);
     }
     if (isDue(SCREEN_CURRENCY, config, nightModeLatched)) {
         for (int i = 0; i < config.currency_count; i++) currencyService.fetchRate(config.currency_bases[i], config.currency_targets[i], state.currencies[i]);

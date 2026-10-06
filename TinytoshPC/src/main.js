@@ -45,58 +45,6 @@ const countryGreetings = {
   "GR": "Yassou, Greece 🇬🇷"
 };
 
-const topStocks = [
-  ["S&P 500 ETF", "SPY"], ["Invesco QQQ (Tech)", "QQQ"], ["Dow Jones ETF", "DIA"],
-  ["Vanguard Total Stock", "VTI"], ["Vanguard S&P 500", "VOO"], ["Semiconductor ETF", "SMH"],
-  ["Financial Select", "XLF"], ["Health Care Select", "XLV"], ["Energy Select", "XLE"],
-  ["Apple Inc.", "AAPL"], ["Microsoft Corp.", "MSFT"], ["NVIDIA Corp.", "NVDA"],
-  ["Alphabet Inc.", "GOOG"], ["Amazon.com Inc.", "AMZN"], ["Meta Platforms", "META"],
-  ["Tesla Inc.", "TSLA"], ["Taiwan Semiconductor", "TSM"], ["Broadcom Inc.", "AVGO"],
-  ["ASML Holding", "ASML"], ["Intel Corp.", "INTC"], ["Qualcomm Inc.", "QCOM"],
-  ["Texas Instruments", "TXN"], ["Micron Technology", "MU"], ["ARM Holdings", "ARM"],
-  ["Salesforce Inc.", "CRM"], ["Adobe Inc.", "ADBE"], ["ServiceNow", "NOW"],
-  ["Snowflake Inc.", "SNOW"], ["CrowdStrike", "CRWD"], ["Palo Alto Networks", "PANW"],
-  ["Fortinet", "FTNT"], ["Palantir Tech", "PLTR"], ["Datadog Inc.", "DDOG"],
-  ["JPMorgan Chase", "JPM"], ["Visa Inc.", "V"], ["Mastercard Inc.", "MA"],
-  ["Bank of America", "BAC"], ["Berkshire Hathaway", "BRK.B"], ["Wells Fargo", "WFC"],
-  ["Goldman Sachs", "GS"], ["Morgan Stanley", "MS"], ["American Express", "AXP"],
-  ["PayPal Holdings", "PYPL"], ["Block Inc. (Square)", "SQ"], ["Coinbase Global", "COIN"],
-  ["MicroStrategy", "MSTR"], ["Walmart Inc.", "WMT"], ["Costco Wholesale", "COST"],
-  ["The Home Depot", "HD"], ["Lowe's Companies", "LOW"], ["Target Corp.", "TGT"],
-  ["McDonald's Corp.", "MCD"], ["Starbucks Corp.", "SBUX"], ["Nike Inc.", "NKE"],
-  ["Lululemon", "LULU"], ["Procter & Gamble", "PG"], ["The Coca-Cola Co.", "KO"],
-  ["PepsiCo Inc.", "PEP"], ["Eli Lilly and Co.", "LLY"], ["UnitedHealth Group", "UNH"],
-  ["Johnson & Johnson", "JNJ"], ["AbbVie Inc.", "ABBV"], ["Merck & Co.", "MRK"],
-  ["Pfizer Inc.", "PFE"], ["Novo Nordisk (ADR)", "NVO"], ["Thermo Fisher", "TMO"],
-  ["Intuitive Surgical", "ISRG"], ["Exxon Mobil", "XOM"], ["Chevron Corp.", "CVX"],
-  ["Caterpillar Inc.", "CAT"], ["General Electric", "GE"], ["Honeywell Intl", "HON"],
-  ["The Boeing Company", "BA"], ["Union Pacific", "UNP"], ["Lockheed Martin", "LMT"],
-  ["RTX Corporation", "RTX"], ["The Walt Disney Co.", "DIS"], ["Netflix Inc.", "NFLX"],
-  ["Comcast Corp.", "CMCSA"], ["Spotify Technology", "SPOT"], ["AT&T Inc.", "T"],
-  ["Verizon Comm.", "VZ"], ["T-Mobile US", "TMUS"], ["Alibaba Group", "BABA"],
-  ["Sony Group Corp.", "SONY"], ["Shopify Inc.", "SHOP"], ["MercadoLibre", "MELI"],
-  ["Toyota Motor Corp.", "TM"], ["Ferrari N.V.", "RACE"], ["Uber Technologies", "UBER"],
-  ["Airbnb Inc.", "ABNB"]
-];
-
-const topCoins = [
-  [90, "BTC"], [80, "ETH"], [518, "USDT"], [2710, "BNB"], [48543, "SOL"],
-  [58, "XRP"], [33224, "USDC"], [257, "ADA"], [44857, "AVAX"], [2, "DOGE"],
-  [45131, "DOT"], [2713, "TRX"], [2738, "LINK"], [33536, "MATIC"], [51334, "TON"],
-  [44800, "SHIB"], [1, "LTC"], [2321, "BCH"], [33234, "WBTC"], [44265, "UNI"],
-  [28557, "ATOM"], [47305, "NEAR"], [47214, "ICP"], [51469, "APT"], [51811, "PEPE"],
-  [172, "XLM"], [29854, "OKB"], [118, "ETC"], [28, "XMR"], [32703, "LEO"],
-  [45219, "FIL"], [33503, "HBAR"], [51745, "ARB"], [2741, "VET"], [2816, "MKR"],
-  [42564, "CRO"], [33022, "QNT"], [33177, "ALGO"], [46427, "GRT"], [45088, "AAVE"],
-  [44926, "STX"], [28014, "SNX"], [2679, "EOS"], [46087, "EGLD"], [45224, "SAND"],
-  [28318, "THETA"], [2748, "MANA"], [2742, "XTZ"], [46990, "MINA"], [33309, "FTM"],
-  [44365, "KAVA"], [1376, "NEO"], [46481, "FLOW"], [32785, "CHZ"], [44256, "KLAY"],
-  [32729, "RPL"], [45435, "CRV"], [46682, "GALA"], [44866, "COMP"], [2770, "IOTA"],
-  [33285, "DAI"], [33814, "PAXG"], [32684, "BUSD"], [33282, "TUSD"], [45204, "FRAX"],
-  [44082, "USDP"], [33263, "ENJ"], [33190, "BAT"], [2734, "ZEC"], [2740, "DASH"],
-  [46580, "LDO"], [51717, "OP"], [51859, "SUI"], [51608, "BLUR"], [51381, "GMX"]
-];
-
 const allCountries = [
   ["AF", "Afghanistan"], ["AL", "Albania"], ["DZ", "Algeria"], ["AS", "American Samoa"],
   ["AD", "Andorra"], ["AO", "Angola"], ["AI", "Anguilla"], ["AQ", "Antarctica"],
@@ -228,17 +176,15 @@ const CONFIG_FIELD_MAP = {
   auto_cycle: ['screens','auto_cycle'], screen_int: ['screens','interval_sec'], anim_mask: ['screens','anim_mask'], screen_order: ['screens','order'],
   show_time: ['screens','show_time'], show_calendar: ['screens','show_calendar'], show_weather: ['screens','show_weather'], show_aqi: ['screens','show_aqi'],
   show_daylight: ['screens','show_daylight'], show_moon: ['screens','show_moon'], show_population: ['screens','show_population'], show_pc: ['screens','show_pc'],
-  show_media: ['screens','show_media'], show_stock: ['screens','show_stock'], show_crypto: ['screens','show_crypto'], show_currency: ['screens','show_currency'],
+  show_media: ['screens','show_media'], show_currency: ['screens','show_currency'],
   show_bambu: ['screens','show_bambu'], show_flight: ['screens','show_flight'],
   hide_empty_pc: ['screens','hide_empty_pc'], hide_empty_media: ['screens','hide_empty_media'], hide_empty_bambu: ['screens','hide_empty_bambu'], hide_empty_flight: ['screens','hide_empty_flight'],
-  cal_start: ['calendar','start_day'], cal_hol: ['calendar','show_holidays'], cal_min: ['calendar','minimal'],
+  cal_start: ['calendar','start_day'], cal_min: ['calendar','minimal'],
   temp_unit: ['weather','temp_unit'], round_temps: ['weather','round_temps'], weather_show_header: ['weather','show_header'], custom_weather_int_min: ['weather','custom_sync_min'], weather_values: ['weather','values'],
   aqi_type: ['aqi','type'], aqi_show_header: ['aqi','show_header'], custom_aqi_int_min: ['aqi','custom_sync_min'], aqi_values: ['aqi','values'],
   daylight_min: ['daylight','minimal'],
   moon_min: ['moon','minimal'],
   pop_show_world: ['population','show_world'], pop_show_country: ['population','show_country'],
-  stock_fn: ['stocks','fn'], custom_stock_int_min: ['stocks','custom_sync_min'], stock_symbols: ['stocks','symbols'],
-  crypto_fn: ['crypto','fn'], custom_crypto_int_min: ['crypto','custom_sync_min'], crypto_ids: ['crypto','ids'],
   currency_fn: ['currency','fn'], custom_currency_int_min: ['currency','custom_sync_min'], currency_bases: ['currency','bases'], currency_targets: ['currency','targets'], currency_multipliers: ['currency','multipliers'],
   bambu_ip: ['printer','ip'], bambu_sn: ['printer','sn'], bambu_code: ['printer','code'],
   flight_mode: ['flight','mode'], flight_radius_nm: ['flight','radius_nm'], flight_units: ['flight','units'], flight_primary_info: ['flight','primary_info'], flight_secondary_info: ['flight','secondary_info'], custom_flight_int_min: ['flight','custom_sync_min'],
@@ -286,26 +232,6 @@ function populateDropdowns() {
         });
     }
 
-    const stockSelect = document.querySelector('select[name="stock_symbol"]');
-    if (stockSelect) {
-        topStocks.forEach(s => {
-            let opt = document.createElement("option");
-            opt.value = s[1];
-            opt.text = s[0] + " - " + s[1];
-            stockSelect.add(opt);
-        });
-    }
-    
-    const cryptoSelect = document.querySelector('select[name="crypto_id"]');
-    if (cryptoSelect) {
-        topCoins.forEach(c => {
-            let opt = document.createElement("option");
-            opt.value = c[0];
-            opt.text = c[1];
-            cryptoSelect.add(opt);
-        });
-    }
-    
     const baseSelect = document.querySelector('select[name="currency_base"]');
     const targetSelect = document.querySelector('select[name="currency_target"]');
     if (baseSelect && targetSelect) {
@@ -649,11 +575,9 @@ function updateVisibility() {
       ['showWeather','weatherContent',false], ['showAQI','aqiContent',false],
       ['showDaylight', 'daylightContent', false], ['showMoon', 'moonContent', false],
       ['showPopulation', 'popContent', false], ['showFlight', 'flightContent', false],
-      ['showStock','stockContent',false], ['showCrypto','cryptoContent',false],
       ['showCurrency','currencyContent',false], ['showPc','pcContent',false],
       ['showMedia', 'mediaContent', false], ['showBambu', 'bambuContent', false],
       ['customWeatherSyncChk','customWeatherSyncFields',false], ['customAqiSyncChk','customAqiSyncFields',false],
-      ['customStockSyncChk','customStockSyncFields',false], ['customCryptoSyncChk','customCryptoSyncFields',false],
       ['customCurrencySyncChk','customCurrencySyncFields',false], ['customFlightSyncChk','customFlightSyncFields',false]
   ];
   pairs.forEach(p => {
@@ -875,7 +799,6 @@ async function fetchDeviceData() {
 
             setCb('showCalendar', c.screens.show_calendar);
             setRadio('cal_start', c.calendar.start_day);
-            setCb('cal_hol', c.calendar.show_holidays, true);
             setCb('cal_min', c.calendar.minimal, true);
 
             setCb('showWeather', c.screens.show_weather);
@@ -918,20 +841,6 @@ async function fetchDeviceData() {
             setCb('hide_empty_flight', c.screens.hide_empty_flight, true);
 
             setCb('showPc', c.screens.show_pc);
-
-            setCb('showStock', c.screens.show_stock);
-            setCb('stock_fn', c.stocks.fn, true);
-            setCb('customStockSyncChk', c.stocks.custom_sync_min > 0 ? 1 : 0);
-            setVal('custom_stock_int_min', c.stocks.custom_sync_min > 0 ? c.stocks.custom_sync_min : c.general.refresh_min);
-            const stCont = document.getElementById("stock-list-container");
-            if (stCont) { stCont.innerHTML = ""; (c.stocks.symbols && c.stocks.symbols.length > 0 ? c.stocks.symbols : ["AAPL"]).forEach(s => window.addStockRow(s)); }
-
-            setCb('showCrypto', c.screens.show_crypto);
-            setCb('crypto_fn', c.crypto.fn, true);
-            setCb('customCryptoSyncChk', c.crypto.custom_sync_min > 0 ? 1 : 0);
-            setVal('custom_crypto_int_min', c.crypto.custom_sync_min > 0 ? c.crypto.custom_sync_min : c.general.refresh_min);
-            const crCont = document.getElementById("crypto-list-container");
-            if (crCont) { crCont.innerHTML = ""; (c.crypto.ids && c.crypto.ids.length > 0 ? c.crypto.ids : [90]).forEach(cId => window.addCryptoRow(cId)); }
 
             setCb('showCurrency', c.screens.show_currency);
             setCb('currency_fn', c.currency.fn, true);
@@ -996,10 +905,6 @@ async function fetchDeviceData() {
 
         const cfgTz = d.config && d.config.general && d.config.general.timezone;
         set('preview-tz', cfgTz || document.querySelector('select[name="timezone"]')?.value || "--");
-        if (st.calendar && st.calendar.count !== undefined) {
-            set('preview-hol', st.calendar.count > 0 ? st.calendar.count : 'No holiday data');
-        }
-
         updateLiveHeader();
 
         const tempUnit = (d.config && d.config.weather) ? d.config.weather.temp_unit : 'C';
@@ -1082,34 +987,6 @@ async function fetchDeviceData() {
             let gr = document.getElementById('pop-grid'); if(gr) gr.classList.add('hidden');
         }
         checkPopSafetyNet();
-
-        if (st.stocks && st.stocks.data && st.stocks.data.length > 0) {
-            let nd = document.getElementById('stock-no-data'); if(nd) nd.style.display = 'none';
-            let gr = document.getElementById('stock-grid'); if(gr) gr.classList.remove('hidden');
-            let pStr = "", cStr = "";
-            st.stocks.data.forEach(s => {
-                pStr += s.symbol + ": $" + s.price + "<br>";
-                cStr += (parseFloat(s.change) >= 0 ? "+" : "") + s.change + "%<br>";
-            });
-            set('stock-price', pStr, true); set('stock-change', cStr, true); set('stock-upd', 'Last Update: ' + (st.weather ? st.weather.update_time : ''));
-        } else {
-            let nd = document.getElementById('stock-no-data'); if(nd) nd.style.display = 'block';
-            let gr = document.getElementById('stock-grid'); if(gr) gr.classList.add('hidden');
-        }
-
-        if (st.crypto && st.crypto.data && st.crypto.data.length > 0) {
-            let nd = document.getElementById('crypto-no-data'); if(nd) nd.style.display = 'none';
-            let gr = document.getElementById('crypto-grid'); if(gr) gr.classList.remove('hidden');
-            let pStr = "", cStr = "";
-            st.crypto.data.forEach(s => {
-                pStr += s.symbol + ": $" + s.price + "<br>";
-                cStr += (parseFloat(s.change) >= 0 ? "+" : "") + s.change + "%<br>";
-            });
-            set('crypto-price', pStr, true); set('crypto-change', cStr, true); set('crypto-upd', 'Last Update: ' + (st.weather ? st.weather.update_time : ''));
-        } else {
-            let nd = document.getElementById('crypto-no-data'); if(nd) nd.style.display = 'block';
-            let gr = document.getElementById('crypto-grid'); if(gr) gr.classList.add('hidden');
-        }
 
         if (st.currency && st.currency.data && st.currency.data.length > 0) {
             let nd = document.getElementById('currency-no-data'); if(nd) nd.style.display = 'none';
@@ -1211,30 +1088,6 @@ window.removeRow = function(btn, containerId) {
     updateRowControls(containerId, 5);
 };
 
-window.addStockRow = function(val = null) {
-    const container = document.getElementById("stock-list-container");
-    if (!container || container.children.length >= 5) return;
-    const div = document.createElement("div"); div.className = "multi-row";
-    let opts = topStocks.map(s => `<option value="${s[1]}">${s[0]} - ${s[1]}</option>`).join('');
-    div.innerHTML = `<div class="input-wrapper"><label class="mt-0">Track Stock/ETF:</label><select name="stock_symbols[]">${opts}</select></div><button type="button" class="btn-remove" onclick="removeRow(this, 'stock-list-container')">-</button>`;
-    container.appendChild(div);
-    if (val) div.querySelector("select").value = val;
-    formDirty = true;
-    updateRowControls('stock-list-container', 5);
-};
-
-window.addCryptoRow = function(val = null) {
-    const container = document.getElementById("crypto-list-container");
-    if (!container || container.children.length >= 5) return;
-    const div = document.createElement("div"); div.className = "multi-row";
-    let opts = topCoins.map(c => `<option value="${c[0]}">${c[1]}</option>`).join('');
-    div.innerHTML = `<div class="input-wrapper"><label class="mt-0">Track Crypto:</label><select name="crypto_ids[]">${opts}</select></div><button type="button" class="btn-remove" onclick="removeRow(this, 'crypto-list-container')">-</button>`;
-    container.appendChild(div);
-    if (val) div.querySelector("select").value = val;
-    formDirty = true;
-    updateRowControls('crypto-list-container', 5);
-};
-
 window.addCurrencyRow = function(bVal = null, tVal = null, mVal = null) {
     const container = document.getElementById("currency-list-container");
     if (!container || container.children.length >= 5) return;
@@ -1288,7 +1141,7 @@ window.addEventListener("DOMContentLoaded", () => {
     setInterval(fetchDeviceData, HARDWARE_SYNC_INTERVAL_MS); 
     setTimeout(fetchDeviceData, INITIAL_SYNC_DELAY_MS); 
 
-    ['autoDetect', 'nightMode', 'showTime', 'showCalendar', 'showWeather', 'showDaylight', 'showMoon', 'showPopulation', 'showFlight', 'showPc', 'showCrypto', 'showCurrency', 'showStock', 'showAQI', 'showMedia', 'showBambu', 'autoCycle', 'customWeatherSyncChk', 'customAqiSyncChk', 'customStockSyncChk', 'customCryptoSyncChk', 'customCurrencySyncChk', 'customFlightSyncChk'].forEach(id => {
+    ['autoDetect', 'nightMode', 'showTime', 'showCalendar', 'showWeather', 'showDaylight', 'showMoon', 'showPopulation', 'showFlight', 'showPc', 'showCurrency', 'showAQI', 'showMedia', 'showBambu', 'autoCycle', 'customWeatherSyncChk', 'customAqiSyncChk', 'customCurrencySyncChk', 'customFlightSyncChk'].forEach(id => {
         var el = document.getElementById(id);
         if(el) el.addEventListener('change', () => { updateVisibility(); syncScreenOrder(true); });
     });
@@ -1376,8 +1229,6 @@ window.addEventListener("DOMContentLoaded", () => {
             jsonObj['anim_mask'] = parseInt(document.getElementById('finalMask').value);
             jsonObj['screen_order'] = document.getElementById('screenOrderInput').value;
 
-            jsonObj['stock_symbols'] = Array.from(form.querySelectorAll('select[name="stock_symbols[]"]')).map(s => s.value);
-            jsonObj['crypto_ids'] = Array.from(form.querySelectorAll('select[name="crypto_ids[]"]')).map(s => Number(s.value));
             jsonObj['currency_bases'] = Array.from(form.querySelectorAll('select[name="currency_bases[]"]')).map(s => s.value);
             jsonObj['currency_targets'] = Array.from(form.querySelectorAll('select[name="currency_targets[]"]')).map(s => s.value);
             jsonObj['currency_multipliers'] = Array.from(form.querySelectorAll('select[name="currency_multipliers[]"]')).map(s => Number(s.value));
@@ -1387,8 +1238,6 @@ window.addEventListener("DOMContentLoaded", () => {
             const customSyncPairs = [
                 ['customWeatherSyncChk', 'customWeatherSyncInt', 'custom_weather_int_min'],
                 ['customAqiSyncChk', 'customAqiSyncInt', 'custom_aqi_int_min'],
-                ['customStockSyncChk', 'customStockSyncInt', 'custom_stock_int_min'],
-                ['customCryptoSyncChk', 'customCryptoSyncInt', 'custom_crypto_int_min'],
                 ['customCurrencySyncChk', 'customCurrencySyncInt', 'custom_currency_int_min'],
                 ['customFlightSyncChk', 'customFlightSyncInt', 'custom_flight_int_min'],
             ];

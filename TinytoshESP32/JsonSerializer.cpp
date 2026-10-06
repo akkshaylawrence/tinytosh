@@ -53,8 +53,6 @@ void JsonSerializer::populateConfigDoc(const Config& config, JsonObject configOb
     screens["show_population"] = config.show_population ? 1 : 0;
     screens["show_pc"] = config.show_pc ? 1 : 0;
     screens["show_media"] = config.show_media ? 1 : 0;
-    screens["show_stock"] = config.show_stock ? 1 : 0;
-    screens["show_crypto"] = config.show_crypto ? 1 : 0;
     screens["show_currency"] = config.show_currency ? 1 : 0;
     screens["show_bambu"] = config.show_bambu ? 1 : 0;
     screens["show_flight"] = config.show_flight ? 1 : 0;
@@ -71,7 +69,6 @@ void JsonSerializer::populateConfigDoc(const Config& config, JsonObject configOb
 
     JsonObject calendar = configObj.createNestedObject("calendar");
     calendar["start_day"] = config.calendar_start_day;
-    calendar["show_holidays"] = config.calendar_show_holidays ? 1 : 0;
     calendar["minimal"] = config.calendar_minimal ? 1 : 0;
 
     JsonObject weather = configObj.createNestedObject("weather");
@@ -98,18 +95,6 @@ void JsonSerializer::populateConfigDoc(const Config& config, JsonObject configOb
     JsonObject population = configObj.createNestedObject("population");
     population["show_world"] = config.pop_show_world ? 1 : 0;
     population["show_country"] = config.pop_show_country ? 1 : 0;
-
-    JsonObject stocks = configObj.createNestedObject("stocks");
-    stocks["fn"] = config.stock_fn ? 1 : 0;
-    stocks["custom_sync_min"] = config.custom_stock_int_min;
-    JsonArray stArr = stocks.createNestedArray("symbols");
-    for (int i = 0; i < config.stock_count; i++) stArr.add(config.stock_symbols[i]);
-
-    JsonObject crypto = configObj.createNestedObject("crypto");
-    crypto["fn"] = config.crypto_fn ? 1 : 0;
-    crypto["custom_sync_min"] = config.custom_crypto_int_min;
-    JsonArray crArr = crypto.createNestedArray("ids");
-    for (int i = 0; i < config.crypto_count; i++) crArr.add(config.crypto_ids[i]);
 
     JsonObject currency = configObj.createNestedObject("currency");
     currency["fn"] = config.currency_fn ? 1 : 0;
@@ -157,9 +142,6 @@ String JsonSerializer::buildAppStateJson(const AppState& state) {
     JsonObject general = status.createNestedObject("general");
     general["time"] = TimeService::getCurrentTimeShort(state.config.time_format);
     general["date"] = TimeService::getFullDate();
-
-    JsonObject calendar = status.createNestedObject("calendar");
-    calendar["count"] = state.calendar.count;
 
     JsonObject weather = status.createNestedObject("weather");
     weather["update_time"] = state.weather.update_time;
@@ -216,28 +198,6 @@ String JsonSerializer::buildAppStateJson(const AppState& state) {
         if (state.config.pop_show_country && state.population.country_pop_base != -1) {
             population["country_live"] = String(PopulationService::getLivePopulation(state.population.country_pop_base, state.population.country_growth, state.population.country_year));
             population["country_growth"] = String(state.population.country_growth, 2);
-        }
-    }
-
-    JsonObject stocks = status.createNestedObject("stocks");
-    JsonArray stockData = stocks.createNestedArray("data");
-    for (int i = 0; i < state.config.stock_count; i++) {
-        if (state.stocks[i].updated) {
-            JsonObject obj = stockData.createNestedObject();
-            obj["symbol"] = state.stocks[i].symbol;
-            obj["price"] = String(state.stocks[i].price, 2);
-            obj["change"] = String(state.stocks[i].percent_change, 2);
-        }
-    }
-
-    JsonObject crypto = status.createNestedObject("crypto");
-    JsonArray cryptoData = crypto.createNestedArray("data");
-    for (int i = 0; i < state.config.crypto_count; i++) {
-        if (state.cryptos[i].updated) {
-            JsonObject obj = cryptoData.createNestedObject();
-            obj["symbol"] = String(state.cryptos[i].symbol);
-            obj["price"] = String(state.cryptos[i].price_usd);
-            obj["change"] = String(state.cryptos[i].percent_change_24h, 1);
         }
     }
 
@@ -374,8 +334,6 @@ bool JsonSerializer::parseConfig(const char* jsonString, AppState& state) {
         if (g.containsKey("show_population")) config.show_population = g["show_population"] == 1;
         if (g.containsKey("show_pc")) config.show_pc = g["show_pc"] == 1;
         if (g.containsKey("show_media")) config.show_media = g["show_media"] == 1;
-        if (g.containsKey("show_stock")) config.show_stock = g["show_stock"] == 1;
-        if (g.containsKey("show_crypto")) config.show_crypto = g["show_crypto"] == 1;
         if (g.containsKey("show_currency")) config.show_currency = g["show_currency"] == 1;
         if (g.containsKey("show_bambu")) config.show_bambu = g["show_bambu"] == 1;
         if (g.containsKey("show_flight")) config.show_flight = g["show_flight"] == 1;
@@ -385,14 +343,18 @@ bool JsonSerializer::parseConfig(const char* jsonString, AppState& state) {
         if (g.containsKey("hide_empty_flight")) config.hide_empty_flight = g["hide_empty_flight"] == 1;
         if (g.containsKey("order")) {
             String orderStr = g["order"].as<String>();
+            // Configs saved by older firmware (marked by show_stock) hold 14 ids with Stock=8 and Crypto=9; drop them and shift the rest down.
+            bool legacy = g.containsKey("show_stock");
             int idx = 0; int startPos = 0;
-            while (startPos < orderStr.length() && idx < NUM_SCREENS) {
+            while (startPos < orderStr.length() && (legacy || idx < NUM_SCREENS)) {
                 int commaPos = orderStr.indexOf(',', startPos);
-                if (commaPos == -1) {
-                    config.screen_order[idx++] = orderStr.substring(startPos).toInt(); break;
-                } else {
-                    config.screen_order[idx++] = orderStr.substring(startPos, commaPos).toInt(); startPos = commaPos + 1;
+                int id = (commaPos == -1 ? orderStr.substring(startPos) : orderStr.substring(startPos, commaPos)).toInt();
+                if (!legacy || (id != 8 && id != 9)) {
+                    if (legacy && id > 9) id -= 2;
+                    if (idx < NUM_SCREENS) config.screen_order[idx++] = id;
                 }
+                if (commaPos == -1) break;
+                startPos = commaPos + 1;
             }
         }
     }
@@ -400,7 +362,6 @@ bool JsonSerializer::parseConfig(const char* jsonString, AppState& state) {
     if (doc.containsKey("calendar")) {
         JsonObject g = doc["calendar"];
         if (g.containsKey("start_day")) config.calendar_start_day = g["start_day"].as<String>();
-        if (g.containsKey("show_holidays")) config.calendar_show_holidays = g["show_holidays"] == 1;
         if (g.containsKey("minimal")) config.calendar_minimal = g["minimal"] == 1;
     }
 
@@ -447,30 +408,6 @@ bool JsonSerializer::parseConfig(const char* jsonString, AppState& state) {
         if (g.containsKey("show_country")) config.pop_show_country = g["show_country"] == 1;
     }
 
-    if (doc.containsKey("stocks")) {
-        JsonObject g = doc["stocks"];
-        if (g.containsKey("fn")) config.stock_fn = g["fn"] == 1;
-        if (g.containsKey("custom_sync_min")) config.custom_stock_int_min = g["custom_sync_min"];
-        if (g.containsKey("symbols")) {
-            JsonArray arr = g["symbols"].as<JsonArray>();
-            config.stock_count = 0;
-            for (JsonVariant v : arr) if (config.stock_count < MAX_MULTI_ENTRIES) config.stock_symbols[config.stock_count++] = v.as<String>();
-            if (config.stock_count == 0) { config.stock_symbols[0] = "AAPL"; config.stock_count = 1; }
-        }
-    }
-
-    if (doc.containsKey("crypto")) {
-        JsonObject g = doc["crypto"];
-        if (g.containsKey("fn")) config.crypto_fn = g["fn"] == 1;
-        if (g.containsKey("custom_sync_min")) config.custom_crypto_int_min = g["custom_sync_min"];
-        if (g.containsKey("ids")) {
-            JsonArray arr = g["ids"].as<JsonArray>();
-            config.crypto_count = 0;
-            for (JsonVariant v : arr) if (config.crypto_count < MAX_MULTI_ENTRIES) config.crypto_ids[config.crypto_count++] = v.as<int>();
-            if (config.crypto_count == 0) { config.crypto_ids[0] = 90; config.crypto_count = 1; }
-        }
-    }
-
     if (doc.containsKey("currency")) {
         JsonObject g = doc["currency"];
         if (g.containsKey("fn")) config.currency_fn = g["fn"] == 1;
@@ -510,9 +447,6 @@ bool JsonSerializer::parseConfig(const char* jsonString, AppState& state) {
     }
 
     // Dynamic State Wipes (Triggers data reload)
-    state.calendar.last_fetch_year = -1;
-    state.calendar.count = 0;
-
     state.daylight.last_fetch_yday = -1;
 
     state.moon.last_fetch_yday = -1;
@@ -527,14 +461,8 @@ bool JsonSerializer::parseConfig(const char* jsonString, AppState& state) {
     if (!config.show_flight) { state.flight.closest = FlightAircraft(); state.flight.aircraft_count = 0; }
 
     // Array Wipes
-    if (!config.show_crypto) {
-        for (int i = 0; i < MAX_MULTI_ENTRIES; i++) { state.cryptos[i].price_usd = NAN; state.cryptos[i].percent_change_24h = NAN; state.cryptos[i].updated = false; }
-    }
     if (!config.show_currency) {
         for (int i = 0; i < MAX_MULTI_ENTRIES; i++) { state.currencies[i].rate = NAN; state.currencies[i].updated = false; }
-    }
-    if (!config.show_stock) {
-        for (int i = 0; i < MAX_MULTI_ENTRIES; i++) { state.stocks[i].price = NAN; state.stocks[i].percent_change = NAN; state.stocks[i].updated = false; }
     }
 
     if (!config.show_media) { state.media.status = "stopped"; state.media.name = ""; }

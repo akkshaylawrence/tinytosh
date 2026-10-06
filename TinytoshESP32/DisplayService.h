@@ -15,15 +15,13 @@ public:
     
     void showOLEDStatus(std::initializer_list<String> lines, bool clear = true);
     void drawTimeScreen(const Config& config, String timeStr, String dateStr);
-    void drawCalendarScreen(const Config& config, const CalendarData& calendar);
+    void drawCalendarScreen(const Config& config);
     void drawWeatherScreen(const Config& config, const WeatherData& data, const String& currentTime);
     void drawAQIScreen(const Config& config, const AirQualityData& data, const String& currentTime);
     void drawDaylightScreen(const Config& config, const DaylightData& data);
     void drawMoonScreen(const Config& config, const MoonData& data);
     void drawPopulationScreen(const Config& config, const PopulationData& data);
-    void drawCryptoScreen(const Config& config, const CryptoData& data);
     void drawCurrencyScreen(const Config& config, const CurrencyData& data, int multiplier);
-    void drawStockScreen(const Config& config, const StockData& data);
     void drawPcScreen(const PcStats& pcStats);
     void drawMediaScreen(const PcMedia& media);
     void drawBambuScreen(const BambuData& bambu);

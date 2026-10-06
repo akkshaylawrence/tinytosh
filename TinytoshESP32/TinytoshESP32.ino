@@ -3,9 +3,7 @@
 
 #include "AirQualityService.h"
 #include "BambuService.h"
-#include "CalendarService.h"
 #include "ConfigManager.h"
-#include "CryptoService.h"
 #include "CurrencyService.h"
 #include "DataSyncService.h"
 #include "DaylightService.h"
@@ -17,7 +15,6 @@
 #include "NightModeService.h"
 #include "PcMonitorService.h"
 #include "PopulationService.h"
-#include "StockService.h"
 #include "structs.h"
 #include "TimeService.h"
 #include "WeatherService.h"
@@ -45,15 +42,12 @@ DisplayService displayService(128, 64, -1);
 WebServerService webServerService(80, updateAllDataCallback);
 HardwareService hardwareService(handleSingleClick, handleDoubleClick, handleLongPress);
 TimeService timeService;
-CalendarService calendarService;
 WeatherService weatherService;
 AirQualityService airQualityService;
 DaylightService daylightService;
 MoonService moonService;
 PopulationService populationService;
-CryptoService cryptoService;
 CurrencyService currencyService;
-StockService stockService;
 FlightService flightService;
 PcMonitorService pcMonitorService;
 BambuService bambuService;

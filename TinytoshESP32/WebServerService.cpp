@@ -301,9 +301,7 @@ void WebServerService::handleRoot() {
       case SCREEN_MOON: targetId = "showMoon"; break;
       case SCREEN_POPULATION: targetId = "showPopulation"; break;
       case SCREEN_FLIGHT: targetId = "showFlight"; break;
-      case SCREEN_CRYPTO: targetId = "showCrypto"; break;
       case SCREEN_CURRENCY: targetId = "showCurrency"; break;
-      case SCREEN_STOCK: targetId = "showStock"; break;
       case SCREEN_PC_MONITOR: targetId = "showPc"; break;
       case SCREEN_PC_MEDIA: targetId = "showMedia"; break;
       case SCREEN_BAMBU: targetId = "showBambu"; break;
@@ -341,18 +339,14 @@ void WebServerService::handleRoot() {
               add("<label class='checkbox-label mt-0'><input type='checkbox' id='showCalendar' name='show_calendar' value='1' " + String(config.show_calendar ? "checked" : "") + "> Calendar Screen</label>");
               add("<div id='calendarContent' class='collapsible'>");
               
-              String holText = (state->calendar.count > 0) ? String(state->calendar.count) : "No holiday data";
-              
               add("<div class='dashboard-grid'>");
               add("<div class='tile'><div class='tile-icon'>📅</div><div class='tile-value date-val' id='preview-date'>" + TimeService::getFullDate() + "</div><div class='tile-label'>Current Date</div></div>");
-              add("<div class='tile'><div class='tile-icon'>🎉</div><div class='tile-value' id='preview-hol' style='font-size:1.2rem'>" + holText + "</div><div class='tile-label'>Holidays Loaded</div></div>");
               add("</div>");
               
               add("<label>Start Week On:</label><div class='radio-group'>");
               add("<label class='radio-label'><input type='radio' name='cal_start' value='mon' " + String(config.calendar_start_day == "mon" ? "checked" : "") + "> Monday</label>");
               add("<label class='radio-label'><input type='radio' name='cal_start' value='sun' " + String(config.calendar_start_day == "sun" ? "checked" : "") + "> Sunday</label></div>");
               
-              add("<label class='checkbox-label'><input type='checkbox' name='cal_hol' value='1' " + String(config.calendar_show_holidays ? "checked" : "") + "> Show National Holidays</label>");
               add("<label class='checkbox-label'><input type='checkbox' name='cal_min' value='1' " + String(config.calendar_minimal ? "checked" : "") + "> Minimalistic Mode (Hide grid)</label>");
               add("</div></div>");
               break;
@@ -621,52 +615,6 @@ void WebServerService::handleRoot() {
               break;
           }
 
-          case SCREEN_STOCK: {
-              add("<div class='panel' id='panel-" + String(screenId) + "'>");
-              add("<label class='checkbox-label mt-0'><input type='checkbox' id='showStock' name='show_stock' value='1' " + String(config.show_stock ? "checked" : "") + "> Stock Tracking Screen</label>");
-              add("<div id='stockContent' class='collapsible'>");
-              
-              add("<div id='stock-no-data' class='no-data-tile'>📈 Stock data will be available after sync</div><div id='stock-grid' class='hidden'>");
-              add("<div class='dashboard-grid'>");
-              add("<div class='tile'><div class='tile-icon'>📊</div><div class='tile-value' id='stock-price' style='font-size:1.0rem; line-height:1.5;'>--</div><div class='tile-label'>PRICES</div></div>");
-              add("<div class='tile'><div class='tile-icon'>📈</div><div class='tile-value' id='stock-change' style='font-size:1.0rem; line-height:1.5;'>--</div><div class='tile-label'>24H CHANGE</div></div>");
-              add("</div><div class='update-footer' id='stock-upd'>Last Update: --</div></div>");
-
-              add("<div id='stock-list-container'></div>");
-              add("<button type='button' class='btn-blue' onclick='addStockRow()'>+ Add Stock / ETF</button>");
-              add("<label class='checkbox-label'><input type='checkbox' name='stock_fn' value='1' " + String(config.stock_fn ? "checked" : "") + "> Display Full Company Name</label>");
-              add("<hr>");
-              add("<label class='checkbox-label' id='customStockSyncLbl'><input type='checkbox' id='customStockSyncChk' name='custom_stock_sync_ui' value='1' " + String(config.custom_stock_int_min > 0 ? "checked" : "") + "> Custom Data Sync</label>");
-              add("<div id='customStockSyncFields' class='collapsible" + String(config.custom_stock_int_min > 0 ? "" : " hidden") + "'>");
-              add("<label class='mt-0'>Custom Data Sync Interval (Mins):</label><input type='number' min='1' id='customStockSyncInt' name='custom_stock_int_min' value='" + String(config.custom_stock_int_min > 0 ? config.custom_stock_int_min : config.refresh_interval_min) + "'>");
-              add("</div>");
-              add("</div></div>");
-              break;
-          }
-
-          case SCREEN_CRYPTO: {
-              add("<div class='panel' id='panel-" + String(screenId) + "'>");
-              add("<label class='checkbox-label mt-0'><input type='checkbox' id='showCrypto' name='show_crypto' value='1' " + String(config.show_crypto ? "checked" : "") + "> Crypto Tracking Screen</label>");
-              add("<div id='cryptoContent' class='collapsible'>");
-              
-              add("<div id='crypto-no-data' class='no-data-tile'>💰 Crypto data will be available after sync</div><div id='crypto-grid' class='hidden'>");
-              add("<div class='dashboard-grid'>");
-              add("<div class='tile'><div class='tile-icon'>₿</div><div class='tile-value' id='crypto-price' style='font-size:1.0rem; line-height:1.5;'>--</div><div class='tile-label'>PRICES</div></div>");
-              add("<div class='tile'><div class='tile-icon'>📈</div><div class='tile-value' id='crypto-change' style='font-size:1.0rem; line-height:1.5;'>--</div><div class='tile-label'>24H CHANGE</div></div>");
-              add("</div><div class='update-footer' id='crypto-upd'>Last Update: --</div></div>");
-              
-              add("<div id='crypto-list-container'></div>");
-              add("<button type='button' class='btn-blue' onclick='addCryptoRow()'>+ Add Cryptocurrency</button>");
-              add("<label class='checkbox-label'><input type='checkbox' name='crypto_fn' value='1' " + String(config.crypto_fn ? "checked" : "") + "> Display Full Coin Name</label>");
-              add("<hr>");
-              add("<label class='checkbox-label' id='customCryptoSyncLbl'><input type='checkbox' id='customCryptoSyncChk' name='custom_crypto_sync_ui' value='1' " + String(config.custom_crypto_int_min > 0 ? "checked" : "") + "> Custom Data Sync</label>");
-              add("<div id='customCryptoSyncFields' class='collapsible" + String(config.custom_crypto_int_min > 0 ? "" : " hidden") + "'>");
-              add("<label class='mt-0'>Custom Data Sync Interval (Mins):</label><input type='number' min='1' id='customCryptoSyncInt' name='custom_crypto_int_min' value='" + String(config.custom_crypto_int_min > 0 ? config.custom_crypto_int_min : config.refresh_interval_min) + "'>");
-              add("</div>");
-              add("</div></div>");
-              break;
-          }
-
           case SCREEN_CURRENCY: {
               add("<div class='panel' id='panel-" + String(screenId) + "'>");
               add("<label class='checkbox-label mt-0'><input type='checkbox' id='showCurrency' name='show_currency' value='1' " + String(config.show_currency ? "checked" : "") + "> Currency Exchange Screen</label>");
@@ -775,7 +723,7 @@ void WebServerService::handleRoot() {
   add("let formDirty = false;");
 
   add("function updateVisibility(){");
-  add("  var pairs = [['autoDetect','manualFields',true], ['nightMode','nightFields',false], ['showTime', 'timeContent',false], ['showCalendar', 'calendarContent',false], ['showWeather','weatherContent',false], ['showDaylight','daylightContent',false], ['showMoon','moonContent',false], ['showPopulation','popContent',false], ['showFlight','flightContent',false], ['showPc','pcContent',false], ['showCrypto','cryptoContent',false], ['showCurrency','currencyContent',false], ['showStock','stockContent',false], ['showAQI','aqiContent',false], ['showMedia','mediaContent',false], ['showBambu','bambuContent',false], ['customWeatherSyncChk','customWeatherSyncFields',false], ['customAqiSyncChk','customAqiSyncFields',false], ['customStockSyncChk','customStockSyncFields',false], ['customCryptoSyncChk','customCryptoSyncFields',false], ['customCurrencySyncChk','customCurrencySyncFields',false], ['customFlightSyncChk','customFlightSyncFields',false]];");
+  add("  var pairs = [['autoDetect','manualFields',true], ['nightMode','nightFields',false], ['showTime', 'timeContent',false], ['showCalendar', 'calendarContent',false], ['showWeather','weatherContent',false], ['showDaylight','daylightContent',false], ['showMoon','moonContent',false], ['showPopulation','popContent',false], ['showFlight','flightContent',false], ['showPc','pcContent',false], ['showCurrency','currencyContent',false], ['showAQI','aqiContent',false], ['showMedia','mediaContent',false], ['showBambu','bambuContent',false], ['customWeatherSyncChk','customWeatherSyncFields',false], ['customAqiSyncChk','customAqiSyncFields',false], ['customCurrencySyncChk','customCurrencySyncFields',false], ['customFlightSyncChk','customFlightSyncFields',false]];");
   add("  pairs.forEach(p => {");
   add("    var ch = document.getElementById(p[0]); if(!ch) return;");
   add("    var target = document.getElementById(p[1]);");
@@ -836,13 +784,7 @@ void WebServerService::handleRoot() {
   add("window.updateRowControls = function(containerId, maxLimit) { const container = document.getElementById(containerId); if(!container) return; const rows = container.children; const addBtn = container.nextElementSibling; if(addBtn && addBtn.tagName === 'BUTTON') { addBtn.style.display = rows.length >= maxLimit ? 'none' : 'block'; } const removeBtns = container.querySelectorAll('.btn-remove'); removeBtns.forEach(btn => { btn.style.display = rows.length <= 1 ? 'none' : 'flex'; }); };");
   add("window.removeRow = function(btn, containerId) { btn.parentElement.remove(); formDirty = true; updateRowControls(containerId, 5); };");
 
-  add("window.addStockRow = function(val = null) { const container = document.getElementById('stock-list-container'); if (!container || container.children.length >= 5) return; const div = document.createElement('div'); div.className = 'multi-row'; let opts = ''; ");
-  for(auto s : topStocks) { add("opts += `<option value='" + String(s.ticker) + "'>" + String(s.name) + " - " + String(s.ticker) + "</option>`;"); }
-  add("div.innerHTML = `<div class='input-wrapper'><label class='mt-0'>Track Stock:</label><select name='stock_symbols[]'>${opts}</select></div><button type='button' class='btn-remove' onclick=\"removeRow(this, 'stock-list-container')\">-</button>`; container.appendChild(div); if (val) div.querySelector('select').value = val; formDirty = true; updateRowControls('stock-list-container', 5); };");
 
-  add("window.addCryptoRow = function(val = null) { const container = document.getElementById('crypto-list-container'); if (!container || container.children.length >= 5) return; const div = document.createElement('div'); div.className = 'multi-row'; let opts = ''; ");
-  for(auto c : topCoins) { add("opts += `<option value='" + String(c.id) + "'>" + String(c.sym) + "</option>`;"); }
-  add("div.innerHTML = `<div class='input-wrapper'><label class='mt-0'>Track Crypto:</label><select name='crypto_ids[]'>${opts}</select></div><button type='button' class='btn-remove' onclick=\"removeRow(this, 'crypto-list-container')\">-</button>`; container.appendChild(div); if (val) div.querySelector('select').value = val; formDirty = true; updateRowControls('crypto-list-container', 5); };");
 
   add("window.addCurrencyRow = function(bVal = null, tVal = null, mVal = null) { const container = document.getElementById('currency-list-container'); if (!container || container.children.length >= 5) return; const div = document.createElement('div'); div.className = 'multi-row'; let cOpts = ''; ");
   for(auto c : allCurrencies) {
@@ -852,7 +794,7 @@ void WebServerService::handleRoot() {
   }
   add("div.innerHTML = `<div class='input-wrapper'><label class='mt-0'>Base:</label><select name='currency_bases[]'>${cOpts}</select></div><div class='input-wrapper'><label class='mt-0'>Target:</label><select name='currency_targets[]'>${cOpts}</select></div><div class='input-wrapper'><label class='mt-0'>Mult:</label><select name='currency_multipliers[]'><option value='1'>1</option><option value='10'>10</option><option value='100'>100</option><option value='1000'>1000</option></select></div><button type='button' class='btn-remove' onclick=\"removeRow(this, 'currency-list-container')\">-</button>`; container.appendChild(div); if (bVal) div.querySelector(\"select[name='currency_bases[]']\").value = bVal; if (tVal) div.querySelector(\"select[name='currency_targets[]']\").value = tVal; if (mVal) div.querySelector(\"select[name='currency_multipliers[]']\").value = mVal; formDirty = true; updateRowControls('currency-list-container', 5); };");
 
-  add("['autoDetect', 'nightMode', 'showTime', 'showCalendar', 'showWeather', 'showDaylight', 'showMoon', 'showPopulation', 'showFlight', 'showPc', 'showCrypto', 'showCurrency', 'showStock', 'showAQI', 'showMedia', 'showBambu', 'autoCycle', 'customWeatherSyncChk', 'customAqiSyncChk', 'customStockSyncChk', 'customCryptoSyncChk', 'customCurrencySyncChk', 'customFlightSyncChk', 'flightModeRadar', 'flightModeClosest'].forEach(id => { var el=document.getElementById(id); if(el) el.addEventListener('change', updateVisibility); });");
+  add("['autoDetect', 'nightMode', 'showTime', 'showCalendar', 'showWeather', 'showDaylight', 'showMoon', 'showPopulation', 'showFlight', 'showPc', 'showCurrency', 'showAQI', 'showMedia', 'showBambu', 'autoCycle', 'customWeatherSyncChk', 'customAqiSyncChk', 'customCurrencySyncChk', 'customFlightSyncChk', 'flightModeRadar', 'flightModeClosest'].forEach(id => { var el=document.getElementById(id); if(el) el.addEventListener('change', updateVisibility); });");
   add("updateVisibility();");
 
   add("const countryGreetings = {");
@@ -959,7 +901,7 @@ void WebServerService::handleRoot() {
   add("  reorderPhysicalPanels(orderInput.value);");
   add("}");
 
-  add("const panelCheckboxes = ['showTime', 'showCalendar', 'showWeather', 'showAQI', 'showDaylight', 'showMoon', 'showPopulation', 'showCrypto', 'showCurrency', 'showStock', 'showPc', 'showMedia', 'showBambu'];");
+  add("const panelCheckboxes = ['showTime', 'showCalendar', 'showWeather', 'showAQI', 'showDaylight', 'showMoon', 'showPopulation', 'showCurrency', 'showPc', 'showMedia', 'showBambu'];");
   add("panelCheckboxes.forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('change', syncScreenOrder); });");
 
   add("function getDragAfterEl(y) {");
@@ -1014,17 +956,15 @@ void WebServerService::handleRoot() {
   add("  auto_cycle: ['screens','auto_cycle'], screen_int: ['screens','interval_sec'], anim_mask: ['screens','anim_mask'], screen_order: ['screens','order'],");
   add("  show_time: ['screens','show_time'], show_calendar: ['screens','show_calendar'], show_weather: ['screens','show_weather'], show_aqi: ['screens','show_aqi'],");
   add("  show_daylight: ['screens','show_daylight'], show_moon: ['screens','show_moon'], show_population: ['screens','show_population'], show_pc: ['screens','show_pc'],");
-  add("  show_media: ['screens','show_media'], show_stock: ['screens','show_stock'], show_crypto: ['screens','show_crypto'], show_currency: ['screens','show_currency'],");
+  add("  show_media: ['screens','show_media'], show_currency: ['screens','show_currency'],");
   add("  show_bambu: ['screens','show_bambu'], show_flight: ['screens','show_flight'],");
   add("  hide_empty_pc: ['screens','hide_empty_pc'], hide_empty_media: ['screens','hide_empty_media'], hide_empty_bambu: ['screens','hide_empty_bambu'], hide_empty_flight: ['screens','hide_empty_flight'],");
-  add("  cal_start: ['calendar','start_day'], cal_hol: ['calendar','show_holidays'], cal_min: ['calendar','minimal'],");
+  add("  cal_start: ['calendar','start_day'], cal_min: ['calendar','minimal'],");
   add("  temp_unit: ['weather','temp_unit'], round_temps: ['weather','round_temps'], weather_show_header: ['weather','show_header'], custom_weather_int_min: ['weather','custom_sync_min'], weather_values: ['weather','values'],");
   add("  aqi_type: ['aqi','type'], aqi_show_header: ['aqi','show_header'], custom_aqi_int_min: ['aqi','custom_sync_min'], aqi_values: ['aqi','values'],");
   add("  daylight_min: ['daylight','minimal'],");
   add("  moon_min: ['moon','minimal'],");
   add("  pop_show_world: ['population','show_world'], pop_show_country: ['population','show_country'],");
-  add("  stock_fn: ['stocks','fn'], custom_stock_int_min: ['stocks','custom_sync_min'], stock_symbols: ['stocks','symbols'],");
-  add("  crypto_fn: ['crypto','fn'], custom_crypto_int_min: ['crypto','custom_sync_min'], crypto_ids: ['crypto','ids'],");
   add("  currency_fn: ['currency','fn'], custom_currency_int_min: ['currency','custom_sync_min'], currency_bases: ['currency','bases'], currency_targets: ['currency','targets'], currency_multipliers: ['currency','multipliers'],");
   add("  bambu_ip: ['printer','ip'], bambu_sn: ['printer','sn'], bambu_code: ['printer','code'],");
   add("  flight_mode: ['flight','mode'], flight_radius_nm: ['flight','radius_nm'], flight_units: ['flight','units'], flight_primary_info: ['flight','primary_info'], flight_secondary_info: ['flight','secondary_info'], custom_flight_int_min: ['flight','custom_sync_min'],");
@@ -1042,14 +982,12 @@ void WebServerService::handleRoot() {
   add("  });");
 
   add("  e.target.querySelectorAll('input[type=\"checkbox\"]').forEach(cb => { jsonObj[cb.name] = cb.checked ? 1 : 0; });");
-  add("  jsonObj['stock_symbols'] = Array.from(e.target.querySelectorAll('select[name=\"stock_symbols[]\"]')).map(s => s.value);");
-  add("  jsonObj['crypto_ids'] = Array.from(e.target.querySelectorAll('select[name=\"crypto_ids[]\"]')).map(s => Number(s.value));");
   add("  jsonObj['currency_bases'] = Array.from(e.target.querySelectorAll('select[name=\"currency_bases[]\"]')).map(s => s.value);");
   add("  jsonObj['currency_targets'] = Array.from(e.target.querySelectorAll('select[name=\"currency_targets[]\"]')).map(s => s.value);");
   add("  jsonObj['currency_multipliers'] = Array.from(e.target.querySelectorAll('select[name=\"currency_multipliers[]\"]')).map(s => Number(s.value));");
   add("  jsonObj['weather_values'] = Array.from(e.target.querySelectorAll('.weather-val-chk:checked')).map(cb => cb.dataset.key);");
   add("  jsonObj['aqi_values'] = Array.from(e.target.querySelectorAll('.aqi-val-chk:checked')).map(cb => cb.dataset.key);");
-  add("  const customSyncPairs = [['customWeatherSyncChk','customWeatherSyncInt','custom_weather_int_min'], ['customAqiSyncChk','customAqiSyncInt','custom_aqi_int_min'], ['customStockSyncChk','customStockSyncInt','custom_stock_int_min'], ['customCryptoSyncChk','customCryptoSyncInt','custom_crypto_int_min'], ['customCurrencySyncChk','customCurrencySyncInt','custom_currency_int_min'], ['customFlightSyncChk','customFlightSyncInt','custom_flight_int_min']];");
+  add("  const customSyncPairs = [['customWeatherSyncChk','customWeatherSyncInt','custom_weather_int_min'], ['customAqiSyncChk','customAqiSyncInt','custom_aqi_int_min'], ['customCurrencySyncChk','customCurrencySyncInt','custom_currency_int_min'], ['customFlightSyncChk','customFlightSyncInt','custom_flight_int_min']];");
   add("  customSyncPairs.forEach(([chkId, intId, key]) => { const chk = document.getElementById(chkId); const intEl = document.getElementById(intId); jsonObj[key] = (chk && chk.checked && intEl) ? Number(intEl.value) : -1; });");
   add("  jsonObj['anim_mask'] = mask;");
   add("  jsonObj['screen_order'] = document.getElementById('screenOrderInput').value;");
@@ -1136,7 +1074,6 @@ void WebServerService::handleRoot() {
 
   add("    setCb('showCalendar', c.screens.show_calendar);");
   add("    setRadio('cal_start', c.calendar.start_day);");
-  add("    setCb('cal_hol', c.calendar.show_holidays, true);");
   add("    setCb('cal_min', c.calendar.minimal, true);");
 
   add("    setCb('showWeather', c.screens.show_weather);");
@@ -1177,14 +1114,6 @@ void WebServerService::handleRoot() {
 
   add("    setCb('showPc', c.screens.show_pc);");
 
-  add("    setCb('showStock', c.screens.show_stock); setCb('stock_fn', c.stocks.fn, true);");
-  add("    setCb('customStockSyncChk', c.stocks.custom_sync_min > 0 ? 1 : 0);");
-  add("    setVal('custom_stock_int_min', c.stocks.custom_sync_min > 0 ? c.stocks.custom_sync_min : c.general.refresh_min);");
-  add("    const stCont = document.getElementById('stock-list-container'); if (stCont) { stCont.innerHTML = ''; (c.stocks.symbols && c.stocks.symbols.length > 0 ? c.stocks.symbols : ['AAPL']).forEach(s => window.addStockRow(s)); }");
-  add("    setCb('showCrypto', c.screens.show_crypto); setCb('crypto_fn', c.crypto.fn, true);");
-  add("    setCb('customCryptoSyncChk', c.crypto.custom_sync_min > 0 ? 1 : 0);");
-  add("    setVal('custom_crypto_int_min', c.crypto.custom_sync_min > 0 ? c.crypto.custom_sync_min : c.general.refresh_min);");
-  add("    const crCont = document.getElementById('crypto-list-container'); if (crCont) { crCont.innerHTML = ''; (c.crypto.ids && c.crypto.ids.length > 0 ? c.crypto.ids : [90]).forEach(cId => window.addCryptoRow(cId)); }");
   add("    setCb('showCurrency', c.screens.show_currency); setCb('currency_fn', c.currency.fn, true);");
   add("    setCb('customCurrencySyncChk', c.currency.custom_sync_min > 0 ? 1 : 0);");
   add("    setVal('custom_currency_int_min', c.currency.custom_sync_min > 0 ? c.currency.custom_sync_min : c.general.refresh_min);");
@@ -1228,7 +1157,6 @@ void WebServerService::handleRoot() {
   add("  set('preview-date', st.general && st.general.date);");
 
   add("  set('preview-tz', d.config && d.config.general.timezone);");
-  add("  if (st.calendar && st.calendar.count !== undefined) { set('preview-hol', st.calendar.count > 0 ? st.calendar.count : 'No holiday data'); }");
 
   add("  updateLiveHeader();");
 
@@ -1283,18 +1211,6 @@ void WebServerService::handleRoot() {
   add("      set('lbl-pop-ctr-gr', cCode + ' Growth');");
   add("    }");
   add("  } else { hide('pop-no-data', false); hide('pop-grid', true); }");
-
-  add("  if (st.stocks && st.stocks.data && st.stocks.data.length > 0) {");
-  add("    hide('stock-no-data', true); hide('stock-grid', false); let p='', c='';");
-  add("    st.stocks.data.forEach(s => { p += s.symbol + ': $' + s.price + '<br>'; c += (parseFloat(s.change) >= 0 ? '+' : '') + s.change + '%<br>'; });");
-  add("    set('stock-price', p, true); set('stock-change', c, true); set('stock-upd', 'Last Update: ' + st.weather.update_time);");
-  add("  } else { hide('stock-no-data', false); hide('stock-grid', true); }");
-
-  add("  if (st.crypto && st.crypto.data && st.crypto.data.length > 0) {");
-  add("    hide('crypto-no-data', true); hide('crypto-grid', false); let p='', c='';");
-  add("    st.crypto.data.forEach(s => { p += s.symbol + ': $' + s.price + '<br>'; c += (parseFloat(s.change) >= 0 ? '+' : '') + s.change + '%<br>'; });");
-  add("    set('crypto-price', p, true); set('crypto-change', c, true); set('crypto-upd', 'Last Update: ' + st.weather.update_time);");
-  add("  } else { hide('crypto-no-data', false); hide('crypto-grid', true); }");
 
   add("  if (st.currency && st.currency.data && st.currency.data.length > 0) {");
   add("    hide('currency-no-data', true); hide('currency-grid', false); let b='', t='';");
