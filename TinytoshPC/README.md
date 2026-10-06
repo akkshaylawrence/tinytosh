@@ -4,7 +4,7 @@ This is the official desktop companion application for the **[Tinytosh](https://
 
 ## ✨ Key Features
 
-* **📊 Native Hardware & Media Monitoring:** Reads system stats (CPU Load, RAM Usage, and Network Speeds) directly from the OS kernel, and streams active media playback (Track, Artist, Album, Status). No need to run heavy third-party software like AIDA64 or HWiNFO.
+* **📊 Native Hardware & Media Monitoring:** Reads system stats (CPU Load, RAM Usage, and Network Speeds) directly from the OS kernel, and streams active media playback (Track, Artist, Album, Status) from the computer or from Sonos speakers on the local network. No need to run heavy third-party software like AIDA64 or HWiNFO.
 * **📡 Wireless Telemetry & Auto-Connect:** Automatically discovers Tinytosh devices on your local network via mDNS. Connects on startup to broadcast your PC stats completely wirelessly!
 * **🔁 Smart Connection Fallback:** The app constantly monitors your hardware and instantly prioritizes a wired USB connection for maximum stability. If you pull the USB cable, it silently falls back to Wi-Fi to keep the data flowing without dropping a beat.
 * **📜 Live USB Device Logs Terminal:** Streams real-time debug logs from the ESP32 when connected via USB, allowing you to easily monitor API fetches, network scanning, and system status right from your desktop.

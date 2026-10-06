@@ -19,6 +19,8 @@ use futures::StreamExt;
 #[cfg(not(target_os = "macos"))]
 use nowhear::{MediaEvent, MediaSourceBuilder, MediaSource};
 
+mod sonos;
+
 // Main Loop
 const LOOP_INTERVAL_MS: u64 = 1000;          // Base speed of the main background loop
 
@@ -60,16 +62,31 @@ struct AppState {
     latest_config: Mutex<String>,
     user_selected_port: Mutex<String>, 
     media_info: Mutex<MediaStats>,
+    sonos_media: Mutex<MediaStats>,
     device_logs: Mutex<Vec<String>>,
     log_reading_enabled: Mutex<bool>,
 }
 
-#[derive(serde::Serialize, Clone, Default)]
-struct MediaStats {
-    media_status: String,
-    media_name: String,
-    media_author: String,
-    media_album: String,
+#[derive(serde::Serialize, Clone, Default, PartialEq, Debug)]
+pub(crate) struct MediaStats {
+    pub(crate) media_status: String,
+    pub(crate) media_name: String,
+    pub(crate) media_author: String,
+    pub(crate) media_album: String,
+}
+
+fn pick_media(local: &MediaStats, sonos: &MediaStats) -> MediaStats {
+    let ranked = [
+        (local, "playing"),
+        (sonos, "playing"),
+        (local, "paused"),
+        (sonos, "paused"),
+    ];
+    ranked
+        .iter()
+        .find(|(m, status)| m.media_status == *status)
+        .map(|(m, _)| (*m).clone())
+        .unwrap_or_else(|| local.clone())
 }
 
 #[derive(serde::Serialize)]
@@ -251,6 +268,7 @@ fn main() {
         latest_config: Mutex::new(String::new()),
         user_selected_port: Mutex::new(String::new()),
         media_info: Mutex::new(MediaStats::default()),
+        sonos_media: Mutex::new(MediaStats::default()),
         device_logs: Mutex::new(Vec::new()),
         log_reading_enabled: Mutex::new(false),
     };
@@ -468,6 +486,8 @@ fn main() {
                 }
             });
 
+            sonos::spawn(app.handle().clone());
+
             let app_handle_mdns = app.handle().clone();
             thread::spawn(move || {
                 let mdns = ServiceDaemon::new().expect("Failed to create mDNS daemon");
@@ -541,7 +561,9 @@ fn main() {
                     let total_rx_bytes: u64 = networks.iter().map(|(_, n)| n.received()).sum();
                     let download_kb = total_rx_bytes / 1024; 
 
-                    let media_data = state.media_info.lock().unwrap().clone();
+                    let local_media = state.media_info.lock().unwrap().clone();
+                    let sonos_media = state.sonos_media.lock().unwrap().clone();
+                    let media_data = pick_media(&local_media, &sonos_media);
 
                     let data = BridgeStats { 
                         pc_id: thread_pc_id.clone(),
@@ -842,4 +864,38 @@ fn main() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn with_status(status: &str, name: &str) -> MediaStats {
+        MediaStats {
+            media_status: status.to_string(),
+            media_name: name.to_string(),
+            ..MediaStats::default()
+        }
+    }
+
+    #[test]
+    fn pick_media_over_all_status_pairs() {
+        let table = [
+            ("playing", "playing", "local"),
+            ("playing", "paused", "local"),
+            ("playing", "stopped", "local"),
+            ("paused", "playing", "sonos"),
+            ("paused", "paused", "local"),
+            ("paused", "stopped", "local"),
+            ("stopped", "playing", "sonos"),
+            ("stopped", "paused", "sonos"),
+            ("stopped", "stopped", "local"),
+        ];
+        for (l, s, winner) in table {
+            let local = with_status(l, "local");
+            let sonos = with_status(s, "sonos");
+            let expected = if winner == "local" { &local } else { &sonos };
+            assert_eq!(&pick_media(&local, &sonos), expected, "local={l} sonos={s}");
+        }
+    }
 }
