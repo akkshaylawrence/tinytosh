@@ -205,6 +205,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 | Version | Date | Key Changes |
 | :--- | :--- | :--- |
+| **v1.1.5** | *Oct 2026* | 🕰️ Added an optional **Custom NTP Server** setting on the Time Screen: point Tinytosh at a time server on your own network, with `pool.ntp.org` kept as automatic fallback. |
 | **v1.1.4** | *Oct 2026* | 🛩️ Added **Flight Radar** screen: live multi-aircraft radar view or a dedicated Closest Aircraft dashboard, with configurable search radius, Aviation/Metric units, and per-badge Primary/Secondary info. 🌤️🍃 **Weather & Air Quality Overhaul:** replaced the single "Hide Top Bar" toggle with a "With/No Header" layout choice and up to 3 or 6 selectable extra readings. 🔘 Added a **Switch Button** hardware option alongside the Touch Sensor. 🛰️ Added the **Tinytosh Simulator** — a browser-based Wokwi build you can try with zero hardware. |
 | **v1.1.3** | *Sep 2026* | ⏱️ Added **Custom Data Sync Intervals** for Weather, AQI, Stocks, Crypto, and Currency — override the global refresh rate independently per screen. 👆👆 Added **Double-Click Navigation**: single tap moves to the next screen, double tap now jumps back to the previous one. ⚙️ Internal firmware refactor for cleaner, more maintainable code. |
 | **v1.1.2** | *Sep 2026* | 🌍 Added **Population Info** screen featuring a live calculated, second-by-second world and country population ticker. |
