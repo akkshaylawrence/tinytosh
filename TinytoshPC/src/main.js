@@ -222,7 +222,7 @@ const CONFIG_FIELD_MAP = {
   sda_pin: ['hardware','sda_pin'], scl_pin: ['hardware','scl_pin'], button_pin: ['hardware','button_pin'], button_type: ['hardware','button_type'],
   refresh_min: ['general','refresh_min'], time_format: ['general','time_format'], auto_detect: ['general','auto_detect'],
   latitude: ['general','latitude'], longitude: ['general','longitude'], country: ['general','country'], country_code: ['general','country_code'],
-  city: ['general','city'], timezone: ['general','timezone'], date_display: ['general','date_display'],
+  city: ['general','city'], timezone: ['general','timezone'], ntp_server: ['general','ntp_server'], date_display: ['general','date_display'],
   theme_bg: ['theme','bg'], theme_card: ['theme','card'], theme_accent: ['theme','accent'], theme_text: ['theme','text'],
   night_mode: ['night','mode'], night_start: ['night','start'], night_end: ['night','end'], night_action: ['night','action'], night_dim_start: ['night','dim_start'],
   auto_cycle: ['screens','auto_cycle'], screen_int: ['screens','interval_sec'], anim_mask: ['screens','anim_mask'], screen_order: ['screens','order'],
@@ -861,6 +861,7 @@ async function fetchDeviceData() {
             setVal('country_code', c.general.country_code);
             setVal('city', c.general.city);
             setVal('timezone', c.general.timezone);
+            setVal('ntp_server', c.general.ntp_server);
 
             setCb('nightMode', c.night.mode);
             setVal('night_start', c.night.start);

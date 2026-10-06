@@ -86,6 +86,7 @@ struct Config {
   String country_code = "";
   String city = "";
   String timezone = "";
+  String ntp_server = "";
   
   String time_format = "24";
   bool date_display = false;

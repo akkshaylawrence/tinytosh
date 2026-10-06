@@ -101,7 +101,7 @@ void DataSyncService::runFullSync(AppState& state) {
 
     // 2. Sync Time (Depends on Location/Timezone)
     displayService.showOLEDStatus({"\n", "\n", "Syncing Time...", "\n", "Timezone:", config.timezone}, true);
-    timeService.syncNTP(config.timezone);
+    timeService.syncNTP(config.timezone, config.ntp_server);
 
     struct tm timeinfo;
     getLocalTime(&timeinfo);

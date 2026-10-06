@@ -24,6 +24,7 @@ void JsonSerializer::populateConfigDoc(const Config& config, JsonObject configOb
     general["country_code"] = config.country_code;
     general["city"] = config.city;
     general["timezone"] = config.timezone;
+    general["ntp_server"] = config.ntp_server;
     general["date_display"] = config.date_display ? 1 : 0;
 
     JsonObject theme = configObj.createNestedObject("theme");
@@ -329,6 +330,7 @@ bool JsonSerializer::parseConfig(const char* jsonString, AppState& state) {
         if (g.containsKey("country")) config.country = g["country"].as<String>();
         if (g.containsKey("city")) config.city = g["city"].as<String>();
         if (g.containsKey("timezone")) config.timezone = g["timezone"].as<String>();
+        if (g.containsKey("ntp_server")) { config.ntp_server = g["ntp_server"].as<String>(); config.ntp_server.trim(); }
         if (g.containsKey("date_display")) config.date_display = g["date_display"] == 1;
         if (g.containsKey("country_code")) {
             config.country_code = g["country_code"].as<String>();

@@ -6,6 +6,8 @@
 
 #include "zones.h"
 
+char TimeService::customNtpServer[64] = "";
+
 TimeService::TimeService() {}
 
 bool TimeService::fetchLocationData(Config& config) {
@@ -69,11 +71,18 @@ String TimeService::lookupPosixTimezone(const String& ianaTimezone) {
   return "GMT0";
 }
 
-void TimeService::syncNTP(const String& ianaTimezone) {
+void TimeService::syncNTP(const String& ianaTimezone, const String& ntpServer) {
   String posixTimezone = lookupPosixTimezone(ianaTimezone);
   
   Serial.printf("TimeService: Configuring NTP with POSIX rule: %s\n", posixTimezone.c_str()); 
-  configTime(gmtOffset_sec, daylightOffset_sec, NTP_SERVER);
+  strlcpy(customNtpServer, ntpServer.c_str(), sizeof(customNtpServer));
+  if (customNtpServer[0] != '\0') {
+    Serial.printf("TimeService: NTP servers: %s, then %s\n", customNtpServer, DEFAULT_NTP_SERVER);
+    configTime(gmtOffset_sec, daylightOffset_sec, customNtpServer, DEFAULT_NTP_SERVER);
+  } else {
+    Serial.printf("TimeService: NTP server: %s\n", DEFAULT_NTP_SERVER);
+    configTime(gmtOffset_sec, daylightOffset_sec, DEFAULT_NTP_SERVER);
+  }
   
   setenv("TZ", posixTimezone.c_str(), 1); 
   tzset(); 
@@ -81,7 +90,9 @@ void TimeService::syncNTP(const String& ianaTimezone) {
   Serial.println("TimeService: Waiting for NTP time sync..."); 
   time_t now = 0;
   int retryCount = 0;
-  while (now < 1672531200L && retryCount < 20) { 
+  // SNTP starts up to 5s late and gives each server 15s before trying the next, so the fallback needs a longer wait.
+  const int maxRetries = customNtpServer[0] != '\0' ? 50 : 20;
+  while (now < 1672531200L && retryCount < maxRetries) { 
     delay(500);
     now = time(nullptr);
     retryCount++;

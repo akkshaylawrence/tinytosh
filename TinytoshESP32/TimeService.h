@@ -8,7 +8,7 @@
 class TimeService {
 public:
     TimeService();
-    void syncNTP(const String& ianaTimezone);
+    void syncNTP(const String& ianaTimezone, const String& ntpServer);
     bool fetchLocationData(Config& config);
     static String getCurrentTimeShort(String format);
     static String getCurrentTime(String format);
@@ -22,7 +22,9 @@ public:
 
 private:
     static constexpr const char* LOCATION_API_URL = "http://ip-api.com/json/";
-    static constexpr const char* NTP_SERVER = "pool.ntp.org";
+    static constexpr const char* DEFAULT_NTP_SERVER = "pool.ntp.org";
+    // SNTP keeps the pointer it is given, so the name must outlive the config String.
+    static char customNtpServer[64];
     const long  gmtOffset_sec = 0;
     const int   daylightOffset_sec = 0;
 

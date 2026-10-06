@@ -330,6 +330,8 @@ void WebServerService::handleRoot() {
               add("</div>");
               
               add("<label class='checkbox-label'><input type='checkbox' name='date_display' value='1' " + String(config.date_display ? "checked" : "") + "> Display Date Below Time</label>");
+              add("<label>NTP Server:</label><input type='text' name='ntp_server' maxlength='63' placeholder='pool.ntp.org' value='" + config.ntp_server + "'>");
+              add("<p class='help-text'>Optional. Hostname or IP of a time server on your network. Falls back to pool.ntp.org.</p>");
               add("</div></div>");
               break;
           }
@@ -1006,7 +1008,7 @@ void WebServerService::handleRoot() {
   add("  sda_pin: ['hardware','sda_pin'], scl_pin: ['hardware','scl_pin'], button_pin: ['hardware','button_pin'], button_type: ['hardware','button_type'],");
   add("  refresh_min: ['general','refresh_min'], time_format: ['general','time_format'], auto_detect: ['general','auto_detect'],");
   add("  latitude: ['general','latitude'], longitude: ['general','longitude'], country: ['general','country'], country_code: ['general','country_code'],");
-  add("  city: ['general','city'], timezone: ['general','timezone'], date_display: ['general','date_display'],");
+  add("  city: ['general','city'], timezone: ['general','timezone'], ntp_server: ['general','ntp_server'], date_display: ['general','date_display'],");
   add("  theme_bg: ['theme','bg'], theme_card: ['theme','card'], theme_accent: ['theme','accent'], theme_text: ['theme','text'],");
   add("  night_mode: ['night','mode'], night_start: ['night','start'], night_end: ['night','end'], night_action: ['night','action'], night_dim_start: ['night','dim_start'],");
   add("  auto_cycle: ['screens','auto_cycle'], screen_int: ['screens','interval_sec'], anim_mask: ['screens','anim_mask'], screen_order: ['screens','order'],");
@@ -1120,6 +1122,7 @@ void WebServerService::handleRoot() {
   add("    setVal('country_code', c.general.country_code);");
   add("    setVal('city', c.general.city);");
   add("    setVal('timezone', c.general.timezone);");
+  add("    setVal('ntp_server', c.general.ntp_server || '');");
 
   add("    setCb('nightMode', c.night.mode);");
   add("    setVal('night_start', c.night.start);");
