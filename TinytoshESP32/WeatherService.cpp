@@ -57,7 +57,8 @@ bool WeatherService::fetchWeather(const Config& config, WeatherData& data, const
 
   String url = String(WEATHER_API_BASE) + "?latitude=" + String(config.latitude, 4) +
                 "&longitude=" + String(config.longitude, 4) +
-                "&current=" + current;
+                "&current=" + current +
+                "&models=" + WEATHER_MODEL;
 
   Serial.println("WeatherService: Fetching weather data from Open-Meteo -> " + url);
 

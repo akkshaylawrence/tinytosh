@@ -16,6 +16,7 @@ public:
 
 private:
     static constexpr const char* WEATHER_API_BASE = "https://api.open-meteo.com/v1/forecast";
+    static constexpr const char* WEATHER_MODEL = "ecmwf_ifs";
 
     static bool weatherValueSelected(const Config& config, const char* key);
 };
