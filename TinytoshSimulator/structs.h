@@ -79,6 +79,8 @@ struct Config {
   String time_format = "24";
   bool date_display = false;
   int time_style = 0;                // 0 = classic digits, 1 = animated Mac desktop
+  String ui_chrome = "window";       // "window" = title bar and frame, "menubar" = menu bar with clock
+  String ui_paper = "black";         // "black" = lit ink on dark, "white" = dark ink on lit
   unsigned long refresh_interval_min = 15;
 
   String theme_bg = "#000000";

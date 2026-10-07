@@ -42,6 +42,7 @@
 * 🕰️ **Mac Desktop Clock:** An optional style for the Time screen. The time sits in a System 1 window while a cursor drags it around and works the menu bar.
 
 ### ✨ Key Features
+* **🍎 Classic Mac Look:** Every screen is drawn as a System 1 window, with a striped title bar, a close box, Mac progress bars and alert boxes. Pick **Window** or **Menu Bar** framing and **Black** or **White** paper in the Web Panel or PC App.
 * **🧩 Modular Dashboard:** The heart of Tinytosh. Enable or disable any of the screens above to build exactly the device you want — a full 12-screen rotation, a dedicated clock, or anything in between. Toggle screens on/off instantly via the Web Panel or PC App, no reflashing required.
 * **🎛️ Per-Screen Configuration:** It's not just *which* screens you show — it's *how* they look. Every screen has its own dedicated settings (units, minimal vs. full layouts, with/without header modes, full names vs. compact tickers, and more), so each one behaves exactly the way you prefer.
 * **🎨 OLED Theme Engine:** Procedural design system. Pick 4 base colors, and the engine automatically calculates all hover states, UI borders, and muted text tones for both the Web Panel and PC app!
@@ -74,6 +75,7 @@ The firmware is designed to be **non-blocking** and **modular**.
 * **🔄 Universal Config Sync:** The device uses a unified JSON configuration payload, allowing it to instantly accept and apply settings over the local Web Server or via the PC Serial/USB connection.
 * **🌐 mDNS Support:** Easily access the device's Web Panel without memorizing IPs using its unique local domain (e.g., `http://tinytosh-ab12.local`).
 * **🔐 Hardware Pairing Lock:** Telemetry streams are protected. Tinytosh securely pairs to the active PC to ensure multiple computers on the same network don't fight over the display.
+* **🧰 UI Library & Screen Registry:** `Ui.h` draws the Mac frame, fonts and widgets, and gives every screen the same 124x52 canvas. Each screen is one `Screen*.cpp` file plus one row in the `SCREENS` table in `Screens.cpp`, so adding a screen touches no navigation or rendering code. `tools/ui-harness/run.sh` draws every screen in every style on your computer and fails if a pixel leaves the panel.
 * **🖼️ Dynamic Rendering:** The `DisplayService` handles the OLED. It supports "partial screen buffering," allowing for complex transition effects (like dissolving pixels or sliding curtains) without needing a massive frame buffer.
 
 #### 🏗️ Build & Compile Guide
@@ -96,7 +98,10 @@ platform = espressif32
 board = esp32-c3-devkitm-1
 framework = arduino
 monitor_speed = 115200
+board_build.partitions = huge_app.csv
+build_unflags = -std=gnu++11
 build_flags = 
+    -std=gnu++17
     -D ARDUINO_USB_MODE=1
     -D ARDUINO_USB_CDC_ON_BOOT=1
 lib_deps =
@@ -130,6 +135,8 @@ lib_deps =
 * `Wire.h` (I2C)
 * `time.h`
 * `ESPmDNS.h`
+
+> ⚠️ **Partition Scheme:** The firmware is about 1.6 MB, which is larger than the default 1.2 MB app slot. In the Arduino IDE choose **Tools → Partition Scheme → Huge APP (3MB No OTA/1MB SPIFFS)** before compiling, or the build stops with *"text section exceeds available space in board"*. Tinytosh keeps its settings in NVS and does not use OTA updates or a filesystem, so nothing is lost. The PlatformIO config above already sets this with `board_build.partitions`. To rebuild the web installer image from the command line, run `tools/build-firmware.sh`.
 
 ### 2. PC Bridge App (Desktop)
 *Written in Rust 🦀 & Tauri.*
@@ -202,6 +209,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 | Version | Date | Key Changes |
 | :--- | :--- | :--- |
+| **v1.1.8** | *Oct 2026* | 🍎 Every screen now has the **classic Mac look**: a System 1 window with a striped title bar, Mac progress bars, and alert boxes. Choose **Window** or **Menu Bar** framing and **Black** or **White** paper in the Web Panel or PC App. 🙂 Startup is now a Mac boot sequence with a happy Mac and a progress bar, and a sad Mac if WiFi fails. |
 | **v1.1.7** | *Oct 2026* | 🖥️ Added the **Screensaver** screen with four animated scenes: MacPaint, Spinning Mac, Life, and a live Weather scene. Choose the scenes in the Web Panel or PC App. 🕰️ Added a **Mac Desktop** clock style for the Time screen. Animated screens redraw at 25 fps; every other screen is unchanged. Saved settings carry over and gain the new screen at the end of the order. |
 | **v1.1.6** | *Oct 2026* | 🧹 Removed the **Stock Tracker** and **Crypto Tracker** screens and **Public Holidays** on the Calendar screen, along with their settings in the Web Panel and PC App (12 screens remain). Saved screen order is migrated automatically on update. 🌤️ Weather now uses the ECMWF IFS forecast model. Requires PC App v1.2.6. |
 | **v1.1.5** | *Oct 2026* | 🕰️ Added an optional **Custom NTP Server** setting on the Time Screen: point Tinytosh at a time server on your own network, with `pool.ntp.org` kept as automatic fallback. |

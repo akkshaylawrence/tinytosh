@@ -184,6 +184,15 @@ void WebServerService::handleRoot() {
   add("  <div><label class='mt-0'>Main Text:</label><input type='color' name='theme_text' id='theme_text' value='" + config.theme_text + "'></div>");
   add("</div><hr>");
 
+  add("<label class='mt-0'>OLED Screen Frame:</label><div class='radio-group'>");
+  add("<label class='radio-label'><input type='radio' name='ui_chrome' value='window' " + String(config.ui_chrome != "menubar" ? "checked" : "") + "> Window</label>");
+  add("<label class='radio-label'><input type='radio' name='ui_chrome' value='menubar' " + String(config.ui_chrome == "menubar" ? "checked" : "") + "> Menu Bar</label></div>");
+  add("<label>OLED Paper:</label><div class='radio-group'>");
+  add("<label class='radio-label'><input type='radio' name='ui_paper' value='black' " + String(config.ui_paper != "white" ? "checked" : "") + "> Black</label>");
+  add("<label class='radio-label'><input type='radio' name='ui_paper' value='white' " + String(config.ui_paper == "white" ? "checked" : "") + "> White</label></div>");
+  add("<p class='help-text'>The classic Mac look for every screen. White paper lights most of the panel, so it is brighter and wears the OLED faster.</p>");
+  add("<hr>");
+
   add("<label>Data Sync Interval (Mins):</label><input type='number' name='refresh_min' value='" + String(config.refresh_interval_min) + "'>");
   add("<label class='checkbox-label mt-0' style='margin-top: 10px !important;'><input type='checkbox' id='autoCycle' name='auto_cycle' value='1' " + String(config.screen_auto_cycle ? "checked" : "") + "> Cycle Screens Automatically</label>");
   add("<p class='help-text mt-0'>If disabled, screens will only change when you press the button.</p>");
@@ -969,7 +978,7 @@ void WebServerService::handleRoot() {
   add("  sda_pin: ['hardware','sda_pin'], scl_pin: ['hardware','scl_pin'], button_pin: ['hardware','button_pin'], button_type: ['hardware','button_type'],");
   add("  refresh_min: ['general','refresh_min'], time_format: ['general','time_format'], auto_detect: ['general','auto_detect'],");
   add("  latitude: ['general','latitude'], longitude: ['general','longitude'], country: ['general','country'], country_code: ['general','country_code'],");
-  add("  city: ['general','city'], timezone: ['general','timezone'], ntp_server: ['general','ntp_server'], date_display: ['general','date_display'], time_style: ['general','time_style'],");
+  add("  city: ['general','city'], timezone: ['general','timezone'], ntp_server: ['general','ntp_server'], date_display: ['general','date_display'], time_style: ['general','time_style'], ui_chrome: ['general','ui_chrome'], ui_paper: ['general','ui_paper'],");
   add("  theme_bg: ['theme','bg'], theme_card: ['theme','card'], theme_accent: ['theme','accent'], theme_text: ['theme','text'],");
   add("  night_mode: ['night','mode'], night_start: ['night','start'], night_end: ['night','end'], night_action: ['night','action'], night_dim_start: ['night','dim_start'],");
   add("  auto_cycle: ['screens','auto_cycle'], screen_int: ['screens','interval_sec'], anim_mask: ['screens','anim_mask'], screen_order: ['screens','order'],");
@@ -1074,6 +1083,8 @@ void WebServerService::handleRoot() {
   add("    setVal('screen_int', c.screens.interval_sec);");
   add("    setRadio('time_format', c.general.time_format);");
   add("    setRadio('time_style', c.general.time_style);");
+  add("    if (c.general.ui_chrome !== undefined) setRadio('ui_chrome', c.general.ui_chrome);");
+  add("    if (c.general.ui_paper !== undefined) setRadio('ui_paper', c.general.ui_paper);");
 
   add("    setCb('autoDetect', c.general.auto_detect);");
   add("    setVal('latitude', c.general.latitude);");

@@ -76,19 +76,43 @@ void DataSyncService::markFetched(ScreenType screen) {
     }
 }
 
+namespace {
+
+// The boot card's headline and how far along the bar sits for each step of a full sync.
+struct SyncStep {
+    const char* headline;
+    int percent;
+};
+
+const SyncStep STEP_LOCATION    = {"Finding Location", 20};
+const SyncStep STEP_TIME        = {"Setting the Clock", 28};
+const SyncStep STEP_WEATHER     = {"Updating Weather", 36};
+const SyncStep STEP_AIR_QUALITY = {"Updating Air Quality", 44};
+const SyncStep STEP_DAYLIGHT    = {"Updating Daylight", 52};
+const SyncStep STEP_MOON        = {"Updating Moon", 60};
+const SyncStep STEP_POPULATION  = {"Updating Population", 68};
+const SyncStep STEP_FLIGHTS     = {"Updating Flights", 78};
+const SyncStep STEP_CURRENCY    = {"Updating Currency", 88};
+const SyncStep STEP_READY       = {"Tinytosh is Ready", 100};
+
+}  // namespace
+
 void DataSyncService::runFullSync(AppState& state) {
     Config& config = state.config;
+    auto announce = [&](const SyncStep& step, const String& detail) {
+        displayService.showStartup(config, step.headline, detail, step.percent);
+    };
 
     // 1. Location Detection
     if (config.auto_detect) {
-        displayService.showOLEDStatus({"\n", "\n", "Detecting Location...", "\n", "Please wait..."}, true);
+        announce(STEP_LOCATION, "Please wait");
         if (timeService.fetchLocationData(config)) {
             Serial.println("Location updated via IP");
         }
     }
 
     // 2. Sync Time (Depends on Location/Timezone)
-    displayService.showOLEDStatus({"\n", "\n", "Syncing Time...", "\n", "Timezone:", config.timezone}, true);
+    announce(STEP_TIME, config.timezone);
     timeService.syncNTP(config.timezone, config.ntp_server);
 
     struct tm timeinfo;
@@ -97,7 +121,7 @@ void DataSyncService::runFullSync(AppState& state) {
 
     // 4. Fetch Weather (Depends on Lat/Lon)
     if (config.show_weather) {
-        displayService.showOLEDStatus({"\n", "\n", "Updating Weather...", "\n", "Location:", config.city}, true);
+        announce(STEP_WEATHER, config.city);
         String updateTime = TimeService::getCurrentTime(config.time_format);
         weatherService.fetchWeather(config, state.weather, updateTime);
         markFetched(SCREEN_WEATHER);
@@ -105,33 +129,33 @@ void DataSyncService::runFullSync(AppState& state) {
 
     // 5. Fetch Air Quality (Depends on Lat/Lon)
     if (config.show_aqi) {
-        displayService.showOLEDStatus({"\n", "\n", "Updating AQI...", "\n", "Location:", config.city}, true);
+        announce(STEP_AIR_QUALITY, config.city);
         airQualityService.fetchAirQuality(config, state.aqi);
         markFetched(SCREEN_AIR_QUALITY);
     }
 
     // 6. Fetch Daylight (Depends on Lat/Lon)
     if (config.show_daylight && state.daylight.last_fetch_yday != current_yday) {
-        displayService.showOLEDStatus({"\n", "\n", "Updating Daylight...", "\n", "Location:", config.city}, true);
+        announce(STEP_DAYLIGHT, config.city);
         daylightService.fetchDaylight(config, state.daylight);
     }
 
     // 7. Fetch Moon (Depends on Lat/Lon)
     if (config.show_moon && state.moon.last_fetch_yday != current_yday) {
-        displayService.showOLEDStatus({"\n", "\n", "Updating Moon...", "\n", "Location:", config.city}, true);
+        announce(STEP_MOON, config.city);
         moonService.fetchMoon(config, state.moon);
     }
 
     // 8. Fetch Population (Depends on Country Code)
     if (config.show_population && state.population.last_fetch_yday != current_yday) {
         String popLoc = (config.pop_show_world && config.pop_show_country && config.country_code != "") ? ("World + " + config.country_code) : (config.pop_show_world ? "World" : config.country_code);
-        displayService.showOLEDStatus({"\n", "\n", "Updating Populace...", "\n", "Location:", popLoc}, true);
+        announce(STEP_POPULATION, popLoc);
         populationService.fetchPopulation(config, state.population);
     }
 
     // 9. Fetch Flight Radar (Depends on Lat/Lon)
     if (config.show_flight) {
-        displayService.showOLEDStatus({"\n", "\n", "Updating Flights...", "\n", "Radius:", String(config.flight_radius_nm) + " nm"}, true);
+        announce(STEP_FLIGHTS, "Within " + String(config.flight_radius_nm) + " nm");
         flightService.fetchFlights(config, state.flight);
         markFetched(SCREEN_FLIGHT);
     }
@@ -144,13 +168,13 @@ void DataSyncService::runFullSync(AppState& state) {
             String targetUpper = String(config.currency_targets[i]);
             targetUpper.toUpperCase();
 
-            displayService.showOLEDStatus({"\n", "\n", "Updating Currency...", "\n", "Currencies:", baseUpper + " -> " + targetUpper}, true);
+            announce(STEP_CURRENCY, baseUpper + " to " + targetUpper);
             currencyService.fetchRate(config.currency_bases[i], config.currency_targets[i], state.currencies[i]);
         }
         markFetched(SCREEN_CURRENCY);
     }
 
-    displayService.showOLEDStatus({"\n", "\n", "Data Updated", "\n", "\n", "Tinytosh is Ready", "\n", "\n", "Welcome!"}, true);
+    announce(STEP_READY, "Welcome");
 
     // 13. Save Everything
     configManager.saveConfig(config);

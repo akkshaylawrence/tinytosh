@@ -4,7 +4,6 @@
 #include <Adafruit_SSD1306.h>
 #include <Wire.h>
 
-#include "SaverScenes.h"
 #include "structs.h"
 
 class DisplayService {
@@ -14,21 +13,9 @@ public:
     DisplayService(int width, int height, int reset_pin);
     void begin(int sda, int scl);
     
-    void showOLEDStatus(std::initializer_list<String> lines, bool clear = true);
-    void drawTimeScreen(const Config& config, String timeStr, String dateStr);
-    void drawCalendarScreen(const Config& config);
-    void drawWeatherScreen(const Config& config, const WeatherData& data, const String& currentTime);
-    void drawAQIScreen(const Config& config, const AirQualityData& data, const String& currentTime);
-    void drawDaylightScreen(const Config& config, const DaylightData& data);
-    void drawMoonScreen(const Config& config, const MoonData& data);
-    void drawPopulationScreen(const Config& config, const PopulationData& data);
-    void drawCurrencyScreen(const Config& config, const CurrencyData& data, int multiplier);
-    void drawPcScreen(const PcStats& pcStats);
-    void drawMediaScreen(const PcMedia& media);
-    void drawBambuScreen(const BambuData& bambu);
-    void drawFlightScreen(const Config& config, const FlightData& data);
-    void drawSaverScreen(const AppState& state);
-    void drawInfoScreen(const unsigned char* image = nullptr, String text = "No Data");
+    void showStartup(const Config& config, const String& headline, const String& detail, int percent, bool ok = true);
+    void showNotice(const Config& config, const String& title, std::initializer_list<String> lines);
+    void showAlert(const Config& config, const unsigned char* icon, const String& text);
 
     void drawScreen(int screenIndex, const AppState& state, int subIndex = 0);
     void animateTransition(int prevScreen, int prevSub, int nextScreen, int nextSub, const AppState& state);
@@ -55,15 +42,6 @@ private:
 
     static const unsigned long STATIC_REFRESH_MS = 1000;
     static const unsigned long ANIMATED_REFRESH_MS = 40;
-    static const unsigned long SAVER_RESUME_GAP_MS = 2000;
-    static const unsigned long SAVER_SCENE_MAX_MS = 60000;
-    static const unsigned long SAVER_MAX_FRAME_MS = 100;
-
-    int saverScene = NUM_SAVER_SCENES - 1;
-    bool saverStarted = false;
-    unsigned long saverSceneStart = 0;
-    unsigned long saverLastDraw = 0;
-
     int getFirstEnabledScreen(const AppState& state);
 
     int getNextAnimationEffect(uint16_t mask);
@@ -72,9 +50,6 @@ private:
     void animateDissolve(int prev, int pSub, int next, int nSub, const AppState& state);
     void animateCurtain(int prev, int pSub, int next, int nSub, const AppState& state);
     void animateBlinds(int prev, int pSub, int next, int nSub, const AppState& state);
-
-    const unsigned char* getWeatherBitmap(int wmo_code, bool is_day);
-    const unsigned char* getAQIBitmap(int val, bool is_eu);
 };
 
 #endif

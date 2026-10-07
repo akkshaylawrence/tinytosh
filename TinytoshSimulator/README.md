@@ -34,7 +34,9 @@ The first build downloads the ESP32 toolchain and libraries, so it may take a fe
 
 | File | Purpose |
 |---|---|
-| `sketch.ino` | The simulation's screen-drawing, navigation, and button-handling logic. |
+| `sketch.ino` | The simulation's navigation, transitions, and button-handling logic. |
+| `Ui.*`, `Screens.*`, `Screen*.cpp`, `SaverScenes.*` | The firmware's own UI library and screens, copied here by `tools/sync-simulator.sh`. Edit them in `TinytoshESP32/` and re-run the script. |
+| `ScreenHost.cpp` | The simulator's stand-in for the firmware services: seeded clock, no network. |
 | `structs.h` | The shared `Config`/data structs, plus all the mock data defaults. |
 | `images.h` | Icon bitmaps used across the screens. |
 | `diagram.json` | The simulated hardware wiring (ESP32-C3, SSD1306 OLED, pushbutton). |

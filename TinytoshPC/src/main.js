@@ -170,7 +170,7 @@ const CONFIG_FIELD_MAP = {
   sda_pin: ['hardware','sda_pin'], scl_pin: ['hardware','scl_pin'], button_pin: ['hardware','button_pin'], button_type: ['hardware','button_type'],
   refresh_min: ['general','refresh_min'], time_format: ['general','time_format'], auto_detect: ['general','auto_detect'],
   latitude: ['general','latitude'], longitude: ['general','longitude'], country: ['general','country'], country_code: ['general','country_code'],
-  city: ['general','city'], timezone: ['general','timezone'], ntp_server: ['general','ntp_server'], date_display: ['general','date_display'], time_style: ['general','time_style'],
+  city: ['general','city'], timezone: ['general','timezone'], ntp_server: ['general','ntp_server'], date_display: ['general','date_display'], time_style: ['general','time_style'], ui_chrome: ['general','ui_chrome'], ui_paper: ['general','ui_paper'],
   theme_bg: ['theme','bg'], theme_card: ['theme','card'], theme_accent: ['theme','accent'], theme_text: ['theme','text'],
   night_mode: ['night','mode'], night_start: ['night','start'], night_end: ['night','end'], night_action: ['night','action'], night_dim_start: ['night','dim_start'],
   auto_cycle: ['screens','auto_cycle'], screen_int: ['screens','interval_sec'], anim_mask: ['screens','anim_mask'], screen_order: ['screens','order'],
@@ -779,6 +779,8 @@ async function fetchDeviceData() {
             setVal('screen_int', c.screens.interval_sec);
             setRadio('time_format', c.general.time_format);
             if (c.general.time_style !== undefined) setRadio('time_style', c.general.time_style);
+            if (c.general.ui_chrome !== undefined) setRadio('ui_chrome', c.general.ui_chrome);
+            if (c.general.ui_paper !== undefined) setRadio('ui_paper', c.general.ui_paper);
 
             setCb('autoDetect', c.general.auto_detect);
             setVal('latitude', c.general.latitude);

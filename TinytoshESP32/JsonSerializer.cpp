@@ -27,6 +27,8 @@ void JsonSerializer::populateConfigDoc(const Config& config, JsonObject configOb
     general["ntp_server"] = config.ntp_server;
     general["date_display"] = config.date_display ? 1 : 0;
     general["time_style"] = config.time_style;
+    general["ui_chrome"] = config.ui_chrome;
+    general["ui_paper"] = config.ui_paper;
 
     JsonObject theme = configObj.createNestedObject("theme");
     theme["bg"] = config.theme_bg;
@@ -296,6 +298,8 @@ bool JsonSerializer::parseConfig(const char* jsonString, AppState& state) {
         if (g.containsKey("ntp_server")) { config.ntp_server = g["ntp_server"].as<String>(); config.ntp_server.trim(); }
         if (g.containsKey("date_display")) config.date_display = g["date_display"] == 1;
         if (g.containsKey("time_style")) config.time_style = g["time_style"];
+        if (g.containsKey("ui_chrome")) config.ui_chrome = g["ui_chrome"].as<String>();
+        if (g.containsKey("ui_paper")) config.ui_paper = g["ui_paper"].as<String>();
         if (g.containsKey("country_code")) {
             config.country_code = g["country_code"].as<String>();
             for (auto c : allCountries) {

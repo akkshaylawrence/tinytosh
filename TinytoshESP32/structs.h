@@ -90,6 +90,10 @@ struct Config {
   String theme_accent = "#ffffff";
   String theme_text = "#ffffff";
 
+  // OLED Look
+  String ui_chrome = "window";       // "window" = title bar and frame, "menubar" = menu bar with clock
+  String ui_paper = "black";         // "black" = lit ink on dark, "white" = dark ink on lit
+
   // Screens Settings
   bool screen_auto_cycle = true;
   int screen_interval_sec = 15;

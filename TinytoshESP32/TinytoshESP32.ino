@@ -96,11 +96,11 @@ void handleLongPress() {
 
   if (appState.config.screen_auto_cycle) {
     Serial.println("🔄 Auto Cycle: ENABLED");
-    displayService.drawInfoScreen(icon_unlock, "Auto Cycle On");
+    displayService.showAlert(appState.config, icon_unlock, "Auto Cycle On");
     displayService.display.display();
   } else {
     Serial.println("🔒 Auto Cycle: DISABLED (Screen Locked)");
-    displayService.drawInfoScreen(icon_lock, "Auto Cycle Off");
+    displayService.showAlert(appState.config, icon_lock, "Auto Cycle Off");
     displayService.display.display();
   }
   
@@ -136,7 +136,7 @@ void setup() {
   displayService.begin(appState.config.sda_pin, appState.config.scl_pin);
   delay(3000);
 
-  displayService.showOLEDStatus({"\n", "\n", "Starting...", "\n", "\n", "Config Loaded!"}, true);
+  displayService.showStartup(appState.config, "Welcome to Tinytosh", "Starting up", 5);
   bambuService.begin(&appState.config, &appState.bambu);
 
   WiFiManager wm;
@@ -144,10 +144,10 @@ void setup() {
   wm.setConnectRetries(3);
 
   wm.setAPCallback([](WiFiManager* m) {
-    displayService.showOLEDStatus({"\n", "WiFi not connected", "\n", "Connect to WiFi:", AP_SSID, "\n", "Password:", AP_PASS}, true);
+    displayService.showNotice(appState.config, "WiFi Setup", {"Join this network:", AP_SSID, "", "Password:", AP_PASS});
   });
 
-  displayService.showOLEDStatus({"\n", "\n", "Connecting...", "\n", "\n", "Searching WiFi..."}, true);
+  displayService.showStartup(appState.config, "Connecting", "Searching for WiFi", 10);
 
   if (wm.autoConnect(AP_SSID, AP_PASS)) {
     String ipAddress = WiFi.localIP().toString();
@@ -162,14 +162,7 @@ void setup() {
 
     appState.config.device_id = uniqueName;
     appState.config.ip_address = ipAddress;
-    displayService.showOLEDStatus({
-        "Connected to WiFi!", 
-        "", 
-        "IP: " + ipAddress, 
-        "Name: " + uniqueName, 
-        "", 
-        "Loading..."
-    }, true);
+    displayService.showNotice(appState.config, "Connected", {"Web Panel:", ipAddress, uniqueName + ".local"});
 
     delay(3000); 
 
@@ -178,7 +171,7 @@ void setup() {
 
   } else {
     Serial.println("Failed to connect and timed out. Staying in AP Mode.");
-    displayService.showOLEDStatus({"\n", "Connect Failed!", "\n", "Use Web Panel to set WiFi."}, true);
+    displayService.showStartup(appState.config, "Connect Failed", "Use the Web Panel to set WiFi", -1, false);
   }
 
   // 5. Initialize Web Server
