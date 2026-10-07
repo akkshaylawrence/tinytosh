@@ -26,6 +26,7 @@ enum ScreenType {
   SCREEN_PC_MONITOR,
   SCREEN_PC_MEDIA,
   SCREEN_BAMBU,
+  SCREEN_SAVER,
   NUM_SCREENS
 };
 
@@ -41,7 +42,8 @@ inline constexpr const char* SCREEN_NAMES[] = {
   "Currency Exchange",
   "PC Monitor",
   "PC Media",
-  "Printer Info"
+  "Printer Info",
+  "Screensaver"
 };
 
 enum AnimType {
@@ -76,6 +78,7 @@ struct Config {
 
   String time_format = "24";
   bool date_display = false;
+  int time_style = 0;                // 0 = classic digits, 1 = animated Mac desktop
   unsigned long refresh_interval_min = 15;
 
   String theme_bg = "#000000";
@@ -85,7 +88,7 @@ struct Config {
 
   bool screen_auto_cycle = true;
   int screen_interval_sec = 15;
-  int screen_order[NUM_SCREENS] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+  int screen_order[NUM_SCREENS] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
 
   bool show_time = true;
   bool show_calendar = true;
@@ -95,6 +98,7 @@ struct Config {
   bool show_moon = true;
   bool show_population = true;
   bool show_flight = true;
+  bool show_saver = true;
   bool show_currency = true;
   bool show_pc = true;
   bool show_media = true;
@@ -146,6 +150,7 @@ struct Config {
   int custom_flight_int_min = 1;
 
   uint16_t anim_mask = 62;
+  uint16_t saver_mask = 15;          // one bit per SAVER_SCENES entry
 
   bool night_mode = false;
   String night_start = "23:00";

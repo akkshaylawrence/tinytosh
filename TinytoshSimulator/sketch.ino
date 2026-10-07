@@ -7,6 +7,7 @@
 #include <time.h>
 
 #include "images.h"
+#include "SaverScenes.h"
 #include "structs.h"
 
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
@@ -161,6 +162,11 @@ void drawInfoScreen(const unsigned char* image = nullptr, String text = "No Data
 
 void drawTimeScreen(const Config& config, String timeStr, String dateStr) {
     display.clearDisplay();
+
+    if (config.time_style == 1) {
+        drawDesktopClock(display, timeStr.c_str(), config.date_display ? dateStr.c_str() : "CLOCK", millis());
+        return;
+    }
 
     display.setTextColor(SSD1306_WHITE);
     display.setTextWrap(false);
@@ -1889,8 +1895,58 @@ bool isScreenEnabled(const AppState& state, int screenIndex) {
             }
             return true;
         }
+        case SCREEN_SAVER: return config.show_saver && (config.saver_mask & ((1 << NUM_SAVER_SCENES) - 1)) != 0;
         default: return false;
     }
+}
+
+const unsigned long ANIMATED_REFRESH_MS = 40;
+const unsigned long SAVER_RESUME_GAP_MS = 2000;
+const unsigned long SAVER_SCENE_MAX_MS = 60000;
+const unsigned long SAVER_MAX_FRAME_MS = 100;
+
+int saverScene = NUM_SAVER_SCENES - 1;
+bool saverStarted = false;
+unsigned long saverSceneStart = 0;
+unsigned long saverLastDraw = 0;
+unsigned long lastAnimatedFrame = 0;
+
+void drawSaverScreen(const AppState& state) {
+    const unsigned long now = millis();
+    const bool hasWeather = !isnan(state.weather.temp) && state.weather.weather_code != -1;
+
+    uint16_t mask = 0;
+    for (int i = 0; i < NUM_SAVER_SCENES; i++) {
+        bool usable = !SAVER_SCENES[i].needsWeather || hasWeather;
+        if (usable && (state.config.saver_mask & (1 << i))) mask |= 1 << i;
+    }
+    if (mask == 0) mask = state.config.saver_mask;
+
+    const bool resumed = saverStarted && now - saverLastDraw < SAVER_RESUME_GAP_MS;
+    const bool expired = now - saverSceneStart >= SAVER_SCENE_MAX_MS;
+    const bool disabled = !(mask & (1 << saverScene));
+    if (!resumed || expired || disabled) {
+        for (int i = 1; i <= NUM_SAVER_SCENES; i++) {
+            int candidate = (saverScene + i) % NUM_SAVER_SCENES;
+            if (mask & (1 << candidate)) { saverScene = candidate; break; }
+        }
+        SAVER_SCENES[saverScene].init(micros());
+        saverStarted = true;
+        saverSceneStart = now;
+        saverLastDraw = now;
+    }
+
+    const unsigned long frameMs = now - saverLastDraw;
+    SaverInput in;
+    in.ms = now - saverSceneStart;
+    in.dtMs = frameMs > SAVER_MAX_FRAME_MS ? SAVER_MAX_FRAME_MS : frameMs;
+    in.hasWeather = hasWeather;
+    in.temp = hasWeather ? (int)round(state.weather.temp) : 0;
+    in.weatherCode = state.weather.weather_code;
+    saverLastDraw = now;
+
+    display.clearDisplay();
+    SAVER_SCENES[saverScene].draw(display, in);
 }
 
 void drawScreen(int screenIndex, const AppState& state, int subIndex = 0) {
@@ -1907,6 +1963,7 @@ void drawScreen(int screenIndex, const AppState& state, int subIndex = 0) {
         case SCREEN_PC_MONITOR: drawPcScreen(state.pc); break;
         case SCREEN_PC_MEDIA: drawMediaScreen(state.media); break;
         case SCREEN_BAMBU: drawBambuScreen(state.bambu); break;
+        case SCREEN_SAVER: drawSaverScreen(state); break;
     }
 }
 
@@ -2197,5 +2254,12 @@ void loop() {
             switchToNextScreen(appState);
             lastScreenSwitch = millis();
         }
+    }
+
+    bool animated = currentScreen == SCREEN_SAVER || (currentScreen == SCREEN_TIME && appState.config.time_style == 1);
+    if (animated && millis() - lastAnimatedFrame >= ANIMATED_REFRESH_MS) {
+        lastAnimatedFrame = millis();
+        drawCurrentScreen(appState);
+        display.display();
     }
 }

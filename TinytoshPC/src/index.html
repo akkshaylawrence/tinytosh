@@ -211,6 +211,7 @@
               <li class="sortable-item" data-id="9" data-target="showPc"><div class="order-ctrl"><span class="move-btn move-up">▲</span><span class="move-btn move-down">▼</span></div>PC Monitor</li>
               <li class="sortable-item" data-id="10" data-target="showMedia"><div class="order-ctrl"><span class="move-btn move-up">▲</span><span class="move-btn move-down">▼</span></div>PC Media</li>
               <li class="sortable-item" data-id="11" data-target="showBambu"><div class="order-ctrl"><span class="move-btn move-up">▲</span><span class="move-btn move-down">▼</span></div>Printer Info</li>
+              <li class="sortable-item" data-id="12" data-target="showSaver"><div class="order-ctrl"><span class="move-btn move-up">▲</span><span class="move-btn move-down">▼</span></div>Screensaver</li>
             </ul>
             <input type="hidden" name="screen_order" id="screenOrderInput">
           </div>
@@ -224,6 +225,10 @@
                   <div class="tile"><div class="tile-icon">🌐</div><div class="tile-value" id="preview-tz" style="font-size:1.2rem">--</div><div class="tile-label">Timezone</div></div>
                 </div>
                 <label class="checkbox-label"><input type="checkbox" name="date_display"> Display Date Below Time</label>
+                <label>Clock Style:</label><div class="radio-group">
+                  <label class="radio-label"><input type="radio" name="time_style" value="0" checked> Classic</label>
+                  <label class="radio-label"><input type="radio" name="time_style" value="1"> Mac Desktop</label>
+                </div>
                 <label>NTP Server:</label><input type="text" name="ntp_server" maxlength="63" placeholder="pool.ntp.org">
                 <p class='help-text'>Optional. Hostname or IP of a time server on your network. Falls back to pool.ntp.org.</p>
               </div>
@@ -527,6 +532,18 @@
                 <input type="text" name="bambu_sn" placeholder="e.g. 00M...">
                 <label>Printer Access Code:</label>
                 <input type="text" name="bambu_code" placeholder="e.g. 1234abcd">
+              </div>
+            </div>
+
+            <div class="panel" id="panel-12">
+              <label class="checkbox-label mt-0"><input type="checkbox" id="showSaver" name="show_saver"> Screensaver Screen</label>
+              <div id="saverContent" class="collapsible">
+                <label>Scenes:</label>
+                <label class="checkbox-label"><input type="checkbox" class="saver-chk" value="1"> MacPaint</label>
+                <label class="checkbox-label"><input type="checkbox" class="saver-chk" value="2"> Spinning Mac</label>
+                <label class="checkbox-label"><input type="checkbox" class="saver-chk" value="4"> Life</label>
+                <label class="checkbox-label"><input type="checkbox" class="saver-chk" value="8"> Weather</label>
+                <p class='help-text'>One scene plays per visit. The Weather scene needs the Weather screen enabled.</p>
               </div>
             </div>
           </div> 

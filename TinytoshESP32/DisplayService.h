@@ -4,6 +4,7 @@
 #include <Adafruit_SSD1306.h>
 #include <Wire.h>
 
+#include "SaverScenes.h"
 #include "structs.h"
 
 class DisplayService {
@@ -26,6 +27,7 @@ public:
     void drawMediaScreen(const PcMedia& media);
     void drawBambuScreen(const BambuData& bambu);
     void drawFlightScreen(const Config& config, const FlightData& data);
+    void drawSaverScreen(const AppState& state);
     void drawInfoScreen(const unsigned char* image = nullptr, String text = "No Data");
 
     void drawScreen(int screenIndex, const AppState& state, int subIndex = 0);
@@ -39,6 +41,7 @@ public:
     bool isOnFirstEnabledScreen(const AppState& state);
 
     void setContrast(bool dim);
+    unsigned long refreshIntervalMs(const AppState& state) const;
 
 private:
     uint8_t screenBufferOld[1024];
@@ -49,6 +52,17 @@ private:
 
     static const int CONTRAST_DIM = 1;
     static const int CONTRAST_MAX = 255;
+
+    static const unsigned long STATIC_REFRESH_MS = 1000;
+    static const unsigned long ANIMATED_REFRESH_MS = 40;
+    static const unsigned long SAVER_RESUME_GAP_MS = 2000;
+    static const unsigned long SAVER_SCENE_MAX_MS = 60000;
+    static const unsigned long SAVER_MAX_FRAME_MS = 100;
+
+    int saverScene = NUM_SAVER_SCENES - 1;
+    bool saverStarted = false;
+    unsigned long saverSceneStart = 0;
+    unsigned long saverLastDraw = 0;
 
     int getFirstEnabledScreen(const AppState& state);
 

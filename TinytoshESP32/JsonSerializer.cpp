@@ -26,6 +26,7 @@ void JsonSerializer::populateConfigDoc(const Config& config, JsonObject configOb
     general["timezone"] = config.timezone;
     general["ntp_server"] = config.ntp_server;
     general["date_display"] = config.date_display ? 1 : 0;
+    general["time_style"] = config.time_style;
 
     JsonObject theme = configObj.createNestedObject("theme");
     theme["bg"] = config.theme_bg;
@@ -44,6 +45,7 @@ void JsonSerializer::populateConfigDoc(const Config& config, JsonObject configOb
     screens["auto_cycle"] = config.screen_auto_cycle ? 1 : 0;
     screens["interval_sec"] = config.screen_interval_sec;
     screens["anim_mask"] = config.anim_mask;
+    screens["saver_mask"] = config.saver_mask;
     screens["show_time"] = config.show_time ? 1 : 0;
     screens["show_calendar"] = config.show_calendar ? 1 : 0;
     screens["show_weather"] = config.show_weather ? 1 : 0;
@@ -56,6 +58,7 @@ void JsonSerializer::populateConfigDoc(const Config& config, JsonObject configOb
     screens["show_currency"] = config.show_currency ? 1 : 0;
     screens["show_bambu"] = config.show_bambu ? 1 : 0;
     screens["show_flight"] = config.show_flight ? 1 : 0;
+    screens["show_saver"] = config.show_saver ? 1 : 0;
     screens["hide_empty_pc"] = config.hide_empty_pc ? 1 : 0;
     screens["hide_empty_media"] = config.hide_empty_media ? 1 : 0;
     screens["hide_empty_bambu"] = config.hide_empty_bambu ? 1 : 0;
@@ -292,6 +295,7 @@ bool JsonSerializer::parseConfig(const char* jsonString, AppState& state) {
         if (g.containsKey("timezone")) config.timezone = g["timezone"].as<String>();
         if (g.containsKey("ntp_server")) { config.ntp_server = g["ntp_server"].as<String>(); config.ntp_server.trim(); }
         if (g.containsKey("date_display")) config.date_display = g["date_display"] == 1;
+        if (g.containsKey("time_style")) config.time_style = g["time_style"];
         if (g.containsKey("country_code")) {
             config.country_code = g["country_code"].as<String>();
             for (auto c : allCountries) {
@@ -325,6 +329,7 @@ bool JsonSerializer::parseConfig(const char* jsonString, AppState& state) {
         if (g.containsKey("auto_cycle")) config.screen_auto_cycle = g["auto_cycle"] == 1;
         if (g.containsKey("interval_sec")) config.screen_interval_sec = g["interval_sec"];
         if (g.containsKey("anim_mask")) config.anim_mask = g["anim_mask"];
+        if (g.containsKey("saver_mask")) config.saver_mask = g["saver_mask"];
         if (g.containsKey("show_time")) config.show_time = g["show_time"] == 1;
         if (g.containsKey("show_calendar")) config.show_calendar = g["show_calendar"] == 1;
         if (g.containsKey("show_weather")) config.show_weather = g["show_weather"] == 1;
@@ -337,6 +342,7 @@ bool JsonSerializer::parseConfig(const char* jsonString, AppState& state) {
         if (g.containsKey("show_currency")) config.show_currency = g["show_currency"] == 1;
         if (g.containsKey("show_bambu")) config.show_bambu = g["show_bambu"] == 1;
         if (g.containsKey("show_flight")) config.show_flight = g["show_flight"] == 1;
+        if (g.containsKey("show_saver")) config.show_saver = g["show_saver"] == 1;
         if (g.containsKey("hide_empty_pc")) config.hide_empty_pc = g["hide_empty_pc"] == 1;
         if (g.containsKey("hide_empty_media")) config.hide_empty_media = g["hide_empty_media"] == 1;
         if (g.containsKey("hide_empty_bambu")) config.hide_empty_bambu = g["hide_empty_bambu"] == 1;
@@ -355,6 +361,12 @@ bool JsonSerializer::parseConfig(const char* jsonString, AppState& state) {
                 }
                 if (commaPos == -1) break;
                 startPos = commaPos + 1;
+            }
+            // An order saved before a screen existed lacks its id; append it so the screen appears after an upgrade.
+            for (int id = 0; id < NUM_SCREENS && idx < NUM_SCREENS; id++) {
+                bool present = false;
+                for (int j = 0; j < idx; j++) if (config.screen_order[j] == id) present = true;
+                if (!present) config.screen_order[idx++] = id;
             }
         }
     }

@@ -170,14 +170,14 @@ const CONFIG_FIELD_MAP = {
   sda_pin: ['hardware','sda_pin'], scl_pin: ['hardware','scl_pin'], button_pin: ['hardware','button_pin'], button_type: ['hardware','button_type'],
   refresh_min: ['general','refresh_min'], time_format: ['general','time_format'], auto_detect: ['general','auto_detect'],
   latitude: ['general','latitude'], longitude: ['general','longitude'], country: ['general','country'], country_code: ['general','country_code'],
-  city: ['general','city'], timezone: ['general','timezone'], ntp_server: ['general','ntp_server'], date_display: ['general','date_display'],
+  city: ['general','city'], timezone: ['general','timezone'], ntp_server: ['general','ntp_server'], date_display: ['general','date_display'], time_style: ['general','time_style'],
   theme_bg: ['theme','bg'], theme_card: ['theme','card'], theme_accent: ['theme','accent'], theme_text: ['theme','text'],
   night_mode: ['night','mode'], night_start: ['night','start'], night_end: ['night','end'], night_action: ['night','action'], night_dim_start: ['night','dim_start'],
   auto_cycle: ['screens','auto_cycle'], screen_int: ['screens','interval_sec'], anim_mask: ['screens','anim_mask'], screen_order: ['screens','order'],
   show_time: ['screens','show_time'], show_calendar: ['screens','show_calendar'], show_weather: ['screens','show_weather'], show_aqi: ['screens','show_aqi'],
   show_daylight: ['screens','show_daylight'], show_moon: ['screens','show_moon'], show_population: ['screens','show_population'], show_pc: ['screens','show_pc'],
   show_media: ['screens','show_media'], show_currency: ['screens','show_currency'],
-  show_bambu: ['screens','show_bambu'], show_flight: ['screens','show_flight'],
+  show_bambu: ['screens','show_bambu'], show_flight: ['screens','show_flight'], show_saver: ['screens','show_saver'], saver_mask: ['screens','saver_mask'],
   hide_empty_pc: ['screens','hide_empty_pc'], hide_empty_media: ['screens','hide_empty_media'], hide_empty_bambu: ['screens','hide_empty_bambu'], hide_empty_flight: ['screens','hide_empty_flight'],
   cal_start: ['calendar','start_day'], cal_min: ['calendar','minimal'],
   temp_unit: ['weather','temp_unit'], round_temps: ['weather','round_temps'], weather_show_header: ['weather','show_header'], custom_weather_int_min: ['weather','custom_sync_min'], weather_values: ['weather','values'],
@@ -576,7 +576,7 @@ function updateVisibility() {
       ['showDaylight', 'daylightContent', false], ['showMoon', 'moonContent', false],
       ['showPopulation', 'popContent', false], ['showFlight', 'flightContent', false],
       ['showCurrency','currencyContent',false], ['showPc','pcContent',false],
-      ['showMedia', 'mediaContent', false], ['showBambu', 'bambuContent', false],
+      ['showMedia', 'mediaContent', false], ['showBambu', 'bambuContent', false], ['showSaver', 'saverContent', false],
       ['customWeatherSyncChk','customWeatherSyncFields',false], ['customAqiSyncChk','customAqiSyncFields',false],
       ['customCurrencySyncChk','customCurrencySyncFields',false], ['customFlightSyncChk','customFlightSyncFields',false]
   ];
@@ -778,6 +778,7 @@ async function fetchDeviceData() {
             setCb('autoCycle', c.screens.auto_cycle);
             setVal('screen_int', c.screens.interval_sec);
             setRadio('time_format', c.general.time_format);
+            if (c.general.time_style !== undefined) setRadio('time_style', c.general.time_style);
 
             setCb('autoDetect', c.general.auto_detect);
             setVal('latitude', c.general.latitude);
@@ -856,6 +857,10 @@ async function fetchDeviceData() {
 
             setCb('showMedia', c.screens.show_media);
             setCb('showBambu', c.screens.show_bambu);
+            if (c.screens.saver_mask !== undefined) {
+                setCb('showSaver', c.screens.show_saver);
+                document.querySelectorAll('.saver-chk').forEach(cb => { cb.checked = (c.screens.saver_mask & parseInt(cb.value)) !== 0; });
+            }
             setVal('bambu_ip', c.printer.ip);
             setVal('bambu_sn', c.printer.sn);
             setVal('bambu_code', c.printer.code);
@@ -1141,7 +1146,7 @@ window.addEventListener("DOMContentLoaded", () => {
     setInterval(fetchDeviceData, HARDWARE_SYNC_INTERVAL_MS); 
     setTimeout(fetchDeviceData, INITIAL_SYNC_DELAY_MS); 
 
-    ['autoDetect', 'nightMode', 'showTime', 'showCalendar', 'showWeather', 'showDaylight', 'showMoon', 'showPopulation', 'showFlight', 'showPc', 'showCurrency', 'showAQI', 'showMedia', 'showBambu', 'autoCycle', 'customWeatherSyncChk', 'customAqiSyncChk', 'customCurrencySyncChk', 'customFlightSyncChk'].forEach(id => {
+    ['autoDetect', 'nightMode', 'showTime', 'showCalendar', 'showWeather', 'showDaylight', 'showMoon', 'showPopulation', 'showFlight', 'showPc', 'showCurrency', 'showAQI', 'showMedia', 'showBambu', 'showSaver', 'autoCycle', 'customWeatherSyncChk', 'customAqiSyncChk', 'customCurrencySyncChk', 'customFlightSyncChk'].forEach(id => {
         var el = document.getElementById(id);
         if(el) el.addEventListener('change', () => { updateVisibility(); syncScreenOrder(true); });
     });
@@ -1227,6 +1232,9 @@ window.addEventListener("DOMContentLoaded", () => {
             
             form.querySelectorAll('input[type="checkbox"]').forEach(cb => { jsonObj[cb.name] = cb.checked ? 1 : 0; });
             jsonObj['anim_mask'] = parseInt(document.getElementById('finalMask').value);
+            let saverMask = 0;
+            document.querySelectorAll('.saver-chk').forEach(cb => { if (cb.checked) saverMask += parseInt(cb.value); });
+            jsonObj['saver_mask'] = saverMask;
             jsonObj['screen_order'] = document.getElementById('screenOrderInput').value;
 
             jsonObj['currency_bases'] = Array.from(form.querySelectorAll('select[name="currency_bases[]"]')).map(s => s.value);

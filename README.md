@@ -38,6 +38,8 @@
 * 🖥️ **PC Hardware Monitor:** Connects via **USB** or **Wirelessly** to your Windows/Mac/Linux computer to show CPU Load, RAM Usage, and Network Speeds in real-time!
 * 🎧 **PC Media:** Displays currently playing track, artist, album, and playback status streamed directly from your connected computer.
 * 🖨️ **Bambu 3D Printer:** Local network telemetry for your Bambu Lab printer (progress, temperatures, fans, and print status) featuring smart layouts for IDLE and PRINTING modes.
+* 🖥️ **Screensaver:** Animated scenes that play one per visit: MacPaint drawing itself, a spinning wireframe Mac, Conway's Life, and a live-weather scene with rain, snow, or stars behind the temperature. Pick which scenes run in the Web Panel.
+* 🕰️ **Mac Desktop Clock:** An optional style for the Time screen. The time sits in a System 1 window while a cursor drags it around and works the menu bar.
 
 ### ✨ Key Features
 * **🧩 Modular Dashboard:** The heart of Tinytosh. Enable or disable any of the screens above to build exactly the device you want — a full 12-screen rotation, a dedicated clock, or anything in between. Toggle screens on/off instantly via the Web Panel or PC App, no reflashing required.

@@ -241,7 +241,7 @@ void loop() {
       Serial.println("💡 Night Mode: Display turned back ON.");
     }
 
-    unsigned long refreshInterval = nightModeService.getRefreshIntervalMs(activeAction);
+    unsigned long refreshInterval = nightModeService.isLatched() ? nightModeService.getRefreshIntervalMs(activeAction) : displayService.refreshIntervalMs(appState);
 
     if (nightModeService.isRedrawDue(refreshInterval)) {
       if (nightModeService.isLatched()) {

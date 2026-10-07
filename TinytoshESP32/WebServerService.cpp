@@ -4,6 +4,7 @@
 #include <ESPmDNS.h>
 
 #include "JsonSerializer.h"
+#include "SaverScenes.h"
 #include "TimeService.h"
 #include "WeatherService.h"
 #include "zones.h"
@@ -305,6 +306,7 @@ void WebServerService::handleRoot() {
       case SCREEN_PC_MONITOR: targetId = "showPc"; break;
       case SCREEN_PC_MEDIA: targetId = "showMedia"; break;
       case SCREEN_BAMBU: targetId = "showBambu"; break;
+      case SCREEN_SAVER: targetId = "showSaver"; break;
     }
     
     add("<li class='sortable-item' data-id='" + String(screenId) + "' data-target='" + targetId + "' draggable='true'>");
@@ -328,6 +330,9 @@ void WebServerService::handleRoot() {
               add("</div>");
               
               add("<label class='checkbox-label'><input type='checkbox' name='date_display' value='1' " + String(config.date_display ? "checked" : "") + "> Display Date Below Time</label>");
+              add("<label>Clock Style:</label><div class='radio-group'>");
+              add("<label class='radio-label'><input type='radio' name='time_style' value='0' " + String(config.time_style == 0 ? "checked" : "") + "> Classic</label>");
+              add("<label class='radio-label'><input type='radio' name='time_style' value='1' " + String(config.time_style == 1 ? "checked" : "") + "> Mac Desktop</label></div>");
               add("<label>NTP Server:</label><input type='text' name='ntp_server' maxlength='63' placeholder='pool.ntp.org' value='" + config.ntp_server + "'>");
               add("<p class='help-text'>Optional. Hostname or IP of a time server on your network. Falls back to pool.ntp.org.</p>");
               add("</div></div>");
@@ -685,6 +690,20 @@ void WebServerService::handleRoot() {
               break;
           }
 
+          case SCREEN_SAVER: {
+              add("<div class='panel' id='panel-" + String(screenId) + "'>");
+              add("<label class='checkbox-label mt-0'><input type='checkbox' id='showSaver' name='show_saver' value='1' " + String(config.show_saver ? "checked" : "") + "> Screensaver Screen</label>");
+              add("<div id='saverContent' class='collapsible'>");
+              add("<label>Scenes:</label>");
+              for (int s = 0; s < NUM_SAVER_SCENES; s++) {
+                  bool isSet = (config.saver_mask & (1 << s));
+                  add("<label class='checkbox-label'><input type='checkbox' class='saver-chk' value='" + String(1 << s) + "' " + String(isSet ? "checked" : "") + "> " + String(SAVER_SCENES[s].name) + "</label>");
+              }
+              add("<p class='help-text'>One scene plays per visit. The Weather scene needs the Weather screen enabled.</p>");
+              add("</div></div>");
+              break;
+          }
+
           case SCREEN_BAMBU: {
               add("<div class='panel' id='panel-" + String(screenId) + "'>");
               add("<label class='checkbox-label mt-0'><input type='checkbox' id='showBambu' name='show_bambu' value='1' " + String(config.show_bambu ? "checked" : "") + "> Bambu 3D Printer Screen</label>");
@@ -723,7 +742,7 @@ void WebServerService::handleRoot() {
   add("let formDirty = false;");
 
   add("function updateVisibility(){");
-  add("  var pairs = [['autoDetect','manualFields',true], ['nightMode','nightFields',false], ['showTime', 'timeContent',false], ['showCalendar', 'calendarContent',false], ['showWeather','weatherContent',false], ['showDaylight','daylightContent',false], ['showMoon','moonContent',false], ['showPopulation','popContent',false], ['showFlight','flightContent',false], ['showPc','pcContent',false], ['showCurrency','currencyContent',false], ['showAQI','aqiContent',false], ['showMedia','mediaContent',false], ['showBambu','bambuContent',false], ['customWeatherSyncChk','customWeatherSyncFields',false], ['customAqiSyncChk','customAqiSyncFields',false], ['customCurrencySyncChk','customCurrencySyncFields',false], ['customFlightSyncChk','customFlightSyncFields',false]];");
+  add("  var pairs = [['autoDetect','manualFields',true], ['nightMode','nightFields',false], ['showTime', 'timeContent',false], ['showCalendar', 'calendarContent',false], ['showWeather','weatherContent',false], ['showDaylight','daylightContent',false], ['showMoon','moonContent',false], ['showPopulation','popContent',false], ['showFlight','flightContent',false], ['showPc','pcContent',false], ['showCurrency','currencyContent',false], ['showAQI','aqiContent',false], ['showMedia','mediaContent',false], ['showBambu','bambuContent',false], ['showSaver','saverContent',false], ['customWeatherSyncChk','customWeatherSyncFields',false], ['customAqiSyncChk','customAqiSyncFields',false], ['customCurrencySyncChk','customCurrencySyncFields',false], ['customFlightSyncChk','customFlightSyncFields',false]];");
   add("  pairs.forEach(p => {");
   add("    var ch = document.getElementById(p[0]); if(!ch) return;");
   add("    var target = document.getElementById(p[1]);");
@@ -794,7 +813,7 @@ void WebServerService::handleRoot() {
   }
   add("div.innerHTML = `<div class='input-wrapper'><label class='mt-0'>Base:</label><select name='currency_bases[]'>${cOpts}</select></div><div class='input-wrapper'><label class='mt-0'>Target:</label><select name='currency_targets[]'>${cOpts}</select></div><div class='input-wrapper'><label class='mt-0'>Mult:</label><select name='currency_multipliers[]'><option value='1'>1</option><option value='10'>10</option><option value='100'>100</option><option value='1000'>1000</option></select></div><button type='button' class='btn-remove' onclick=\"removeRow(this, 'currency-list-container')\">-</button>`; container.appendChild(div); if (bVal) div.querySelector(\"select[name='currency_bases[]']\").value = bVal; if (tVal) div.querySelector(\"select[name='currency_targets[]']\").value = tVal; if (mVal) div.querySelector(\"select[name='currency_multipliers[]']\").value = mVal; formDirty = true; updateRowControls('currency-list-container', 5); };");
 
-  add("['autoDetect', 'nightMode', 'showTime', 'showCalendar', 'showWeather', 'showDaylight', 'showMoon', 'showPopulation', 'showFlight', 'showPc', 'showCurrency', 'showAQI', 'showMedia', 'showBambu', 'autoCycle', 'customWeatherSyncChk', 'customAqiSyncChk', 'customCurrencySyncChk', 'customFlightSyncChk', 'flightModeRadar', 'flightModeClosest'].forEach(id => { var el=document.getElementById(id); if(el) el.addEventListener('change', updateVisibility); });");
+  add("['autoDetect', 'nightMode', 'showTime', 'showCalendar', 'showWeather', 'showDaylight', 'showMoon', 'showPopulation', 'showFlight', 'showPc', 'showCurrency', 'showAQI', 'showMedia', 'showBambu', 'showSaver', 'autoCycle', 'customWeatherSyncChk', 'customAqiSyncChk', 'customCurrencySyncChk', 'customFlightSyncChk', 'flightModeRadar', 'flightModeClosest'].forEach(id => { var el=document.getElementById(id); if(el) el.addEventListener('change', updateVisibility); });");
   add("updateVisibility();");
 
   add("const countryGreetings = {");
@@ -901,7 +920,7 @@ void WebServerService::handleRoot() {
   add("  reorderPhysicalPanels(orderInput.value);");
   add("}");
 
-  add("const panelCheckboxes = ['showTime', 'showCalendar', 'showWeather', 'showAQI', 'showDaylight', 'showMoon', 'showPopulation', 'showCurrency', 'showPc', 'showMedia', 'showBambu'];");
+  add("const panelCheckboxes = ['showTime', 'showCalendar', 'showWeather', 'showAQI', 'showDaylight', 'showMoon', 'showPopulation', 'showCurrency', 'showPc', 'showMedia', 'showBambu', 'showSaver'];");
   add("panelCheckboxes.forEach(id => { const el = document.getElementById(id); if (el) el.addEventListener('change', syncScreenOrder); });");
 
   add("function getDragAfterEl(y) {");
@@ -950,14 +969,14 @@ void WebServerService::handleRoot() {
   add("  sda_pin: ['hardware','sda_pin'], scl_pin: ['hardware','scl_pin'], button_pin: ['hardware','button_pin'], button_type: ['hardware','button_type'],");
   add("  refresh_min: ['general','refresh_min'], time_format: ['general','time_format'], auto_detect: ['general','auto_detect'],");
   add("  latitude: ['general','latitude'], longitude: ['general','longitude'], country: ['general','country'], country_code: ['general','country_code'],");
-  add("  city: ['general','city'], timezone: ['general','timezone'], ntp_server: ['general','ntp_server'], date_display: ['general','date_display'],");
+  add("  city: ['general','city'], timezone: ['general','timezone'], ntp_server: ['general','ntp_server'], date_display: ['general','date_display'], time_style: ['general','time_style'],");
   add("  theme_bg: ['theme','bg'], theme_card: ['theme','card'], theme_accent: ['theme','accent'], theme_text: ['theme','text'],");
   add("  night_mode: ['night','mode'], night_start: ['night','start'], night_end: ['night','end'], night_action: ['night','action'], night_dim_start: ['night','dim_start'],");
   add("  auto_cycle: ['screens','auto_cycle'], screen_int: ['screens','interval_sec'], anim_mask: ['screens','anim_mask'], screen_order: ['screens','order'],");
   add("  show_time: ['screens','show_time'], show_calendar: ['screens','show_calendar'], show_weather: ['screens','show_weather'], show_aqi: ['screens','show_aqi'],");
   add("  show_daylight: ['screens','show_daylight'], show_moon: ['screens','show_moon'], show_population: ['screens','show_population'], show_pc: ['screens','show_pc'],");
   add("  show_media: ['screens','show_media'], show_currency: ['screens','show_currency'],");
-  add("  show_bambu: ['screens','show_bambu'], show_flight: ['screens','show_flight'],");
+  add("  show_bambu: ['screens','show_bambu'], show_flight: ['screens','show_flight'], show_saver: ['screens','show_saver'], saver_mask: ['screens','saver_mask'],");
   add("  hide_empty_pc: ['screens','hide_empty_pc'], hide_empty_media: ['screens','hide_empty_media'], hide_empty_bambu: ['screens','hide_empty_bambu'], hide_empty_flight: ['screens','hide_empty_flight'],");
   add("  cal_start: ['calendar','start_day'], cal_min: ['calendar','minimal'],");
   add("  temp_unit: ['weather','temp_unit'], round_temps: ['weather','round_temps'], weather_show_header: ['weather','show_header'], custom_weather_int_min: ['weather','custom_sync_min'], weather_values: ['weather','values'],");
@@ -990,6 +1009,8 @@ void WebServerService::handleRoot() {
   add("  const customSyncPairs = [['customWeatherSyncChk','customWeatherSyncInt','custom_weather_int_min'], ['customAqiSyncChk','customAqiSyncInt','custom_aqi_int_min'], ['customCurrencySyncChk','customCurrencySyncInt','custom_currency_int_min'], ['customFlightSyncChk','customFlightSyncInt','custom_flight_int_min']];");
   add("  customSyncPairs.forEach(([chkId, intId, key]) => { const chk = document.getElementById(chkId); const intEl = document.getElementById(intId); jsonObj[key] = (chk && chk.checked && intEl) ? Number(intEl.value) : -1; });");
   add("  jsonObj['anim_mask'] = mask;");
+  add("  let saverMask = 0; document.querySelectorAll('.saver-chk').forEach(cb => { if(cb.checked) saverMask += parseInt(cb.value); });");
+  add("  jsonObj['saver_mask'] = saverMask;");
   add("  jsonObj['screen_order'] = document.getElementById('screenOrderInput').value;");
 
   add("  if (typeof jsonObj['city'] === 'string') {");
@@ -1052,6 +1073,7 @@ void WebServerService::handleRoot() {
   add("    setCb('autoCycle', c.screens.auto_cycle);");
   add("    setVal('screen_int', c.screens.interval_sec);");
   add("    setRadio('time_format', c.general.time_format);");
+  add("    setRadio('time_style', c.general.time_style);");
 
   add("    setCb('autoDetect', c.general.auto_detect);");
   add("    setVal('latitude', c.general.latitude);");
@@ -1122,6 +1144,8 @@ void WebServerService::handleRoot() {
   add("    setCb('showMedia', c.screens.show_media);");
 
   add("    setCb('showBambu', c.screens.show_bambu);");
+  add("    setCb('showSaver', c.screens.show_saver);");
+  add("    document.querySelectorAll('.saver-chk').forEach(cb => { cb.checked = (c.screens.saver_mask & parseInt(cb.value)) !== 0; });");
   add("    setVal('bambu_ip', c.printer.ip);");
   add("    setVal('bambu_sn', c.printer.sn);");
   add("    setVal('bambu_code', c.printer.code);");

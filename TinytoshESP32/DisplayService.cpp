@@ -94,6 +94,11 @@ void DisplayService::showOLEDStatus(std::initializer_list<String> lines, bool cl
 void DisplayService::drawTimeScreen(const Config& config, String timeStr, String dateStr) {
     display.clearDisplay();
 
+    if (config.time_style == 1) {
+        drawDesktopClock(display, timeStr.c_str(), config.date_display ? dateStr.c_str() : "CLOCK", millis());
+        return;
+    }
+
     display.setTextColor(SSD1306_WHITE);
     display.setTextWrap(false);
     display.setTextSize(1);
@@ -1943,6 +1948,7 @@ bool DisplayService::isScreenEnabled(const AppState& state, int screenIndex) {
             }
             return true;
         }
+        case SCREEN_SAVER:          return config.show_saver && (config.saver_mask & ((1 << NUM_SAVER_SCENES) - 1)) != 0;
         default: return false;
     }
 }
@@ -1961,6 +1967,7 @@ void DisplayService::drawScreen(int screenIndex, const AppState& state, int subI
     case SCREEN_PC_MONITOR: drawPcScreen(state.pc); break;
     case SCREEN_PC_MEDIA: drawMediaScreen(state.media); break;
     case SCREEN_BAMBU: drawBambuScreen(state.bambu); break;
+    case SCREEN_SAVER: drawSaverScreen(state); break;
   }
 }
 
@@ -2060,6 +2067,51 @@ void DisplayService::switchToPreviousScreen(const AppState& state) {
     animateTransition(oldScreen, oldSubScreen, prevScreenCandidate, 0, state);
     currentScreen = prevScreenCandidate;
     currentSubScreen = 0;
+}
+
+void DisplayService::drawSaverScreen(const AppState& state) {
+    const unsigned long now = millis();
+    const bool hasWeather = !isnan(state.weather.temp) && state.weather.weather_code != -1;
+
+    // Scenes that need weather sit out until it has loaded, unless nothing else is enabled.
+    uint16_t mask = 0;
+    for (int i = 0; i < NUM_SAVER_SCENES; i++) {
+        bool usable = !SAVER_SCENES[i].needsWeather || hasWeather;
+        if (usable && (state.config.saver_mask & (1 << i))) mask |= 1 << i;
+    }
+    if (mask == 0) mask = state.config.saver_mask;
+
+    // A gap since the last frame means the rotation left this screen and came back.
+    const bool resumed = saverStarted && now - saverLastDraw < SAVER_RESUME_GAP_MS;
+    const bool expired = now - saverSceneStart >= SAVER_SCENE_MAX_MS;
+    const bool disabled = !(mask & (1 << saverScene));
+    if (!resumed || expired || disabled) {
+        for (int i = 1; i <= NUM_SAVER_SCENES; i++) {
+            int candidate = (saverScene + i) % NUM_SAVER_SCENES;
+            if (mask & (1 << candidate)) { saverScene = candidate; break; }
+        }
+        SAVER_SCENES[saverScene].init(micros());
+        saverStarted = true;
+        saverSceneStart = now;
+        saverLastDraw = now;
+    }
+
+    const unsigned long frameMs = now - saverLastDraw;
+    SaverInput in;
+    in.ms = now - saverSceneStart;
+    in.dtMs = frameMs > SAVER_MAX_FRAME_MS ? SAVER_MAX_FRAME_MS : frameMs;
+    in.hasWeather = hasWeather;
+    in.temp = hasWeather ? (int)round(state.weather.temp) : 0;
+    in.weatherCode = state.weather.weather_code;
+    saverLastDraw = now;
+
+    display.clearDisplay();
+    SAVER_SCENES[saverScene].draw(display, in);
+}
+
+unsigned long DisplayService::refreshIntervalMs(const AppState& state) const {
+    bool animated = currentScreen == SCREEN_SAVER || (currentScreen == SCREEN_TIME && state.config.time_style == 1);
+    return animated ? ANIMATED_REFRESH_MS : STATIC_REFRESH_MS;
 }
 
 void DisplayService::setContrast(bool dim) {
