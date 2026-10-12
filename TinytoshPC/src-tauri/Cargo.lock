@@ -4352,7 +4352,7 @@ dependencies = [
 
 [[package]]
 name = "tinytosh-pc"
-version = "1.2.8"
+version = "1.2.9"
 dependencies = [
  "any_ascii",
  "futures",
