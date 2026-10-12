@@ -4,6 +4,7 @@ const { invoke } = window.__TAURI__.core;
 
 // UI Update Intervals
 const LOCAL_TELEMETRY_INTERVAL_MS = 500;   
+const PRESENCE_INTERVAL_MS = 1000;
 const PORT_SCAN_INTERVAL_MS = 2000;        
 const HARDWARE_SYNC_INTERVAL_MS = 15000;   
 
@@ -167,7 +168,7 @@ const allCurrencies = [
 ];
 
 const CONFIG_FIELD_MAP = {
-  sda_pin: ['hardware','sda_pin'], scl_pin: ['hardware','scl_pin'], button_pin: ['hardware','button_pin'], button_type: ['hardware','button_type'],
+  sda_pin: ['hardware','sda_pin'], scl_pin: ['hardware','scl_pin'], button_pin: ['hardware','button_pin'], button_type: ['hardware','button_type'], presence_ble: ['hardware','presence_ble'],
   refresh_min: ['general','refresh_min'], time_format: ['general','time_format'], auto_detect: ['general','auto_detect'],
   latitude: ['general','latitude'], longitude: ['general','longitude'], country: ['general','country'], country_code: ['general','country_code'],
   city: ['general','city'], timezone: ['general','timezone'], ntp_server: ['general','ntp_server'], date_display: ['general','date_display'], time_style: ['general','time_style'], ui_chrome: ['general','ui_chrome'], ui_paper: ['general','ui_paper'],
@@ -290,6 +291,57 @@ function setUiStatus(text, color, lockDurationMs = 0) {
     if (lockDurationMs > 0) {
         statusLockUntil = Date.now() + lockDurationMs;
     }
+}
+
+let presenceWatchKey = null;
+
+function drawPresenceWatch(rows) {
+    const key = JSON.stringify(rows);
+    if (key === presenceWatchKey) return;
+    presenceWatchKey = key;
+
+    const list = document.getElementById("presence-watch-list");
+    list.replaceChildren(...rows.map(row => {
+        const label = document.createElement("label");
+        label.className = "checkbox-label";
+        const box = document.createElement("input");
+        box.type = "checkbox";
+        box.checked = row.checked;
+        box.addEventListener("change", async () => {
+            await invoke("presence_set_watch", { id: row.id, name: row.name, checked: box.checked });
+            updatePresence();
+        });
+        label.append(box, " " + row.name);
+        return label;
+    }));
+}
+
+async function updatePresence() {
+    try {
+        const view = await invoke("presence_get");
+        document.getElementById("presence-status").innerText = view.status;
+        document.getElementById("presence-enabled").checked = view.enabled;
+        const profile = document.getElementById("presence-profile");
+        if (document.activeElement !== profile) profile.value = view.profile;
+        document.getElementById("presence-trigger-btn").disabled = !view.reachable;
+        document.getElementById("presence-reset-btn").disabled = !view.reachable;
+        document.getElementById("presence-watch-box").classList.toggle("hidden", !view.watch_supported);
+        if (view.watch_supported) drawPresenceWatch(view.watch);
+    } catch (e) {}
+}
+
+function initPresence() {
+    document.getElementById("presence-enabled").addEventListener("change", async (e) => {
+        await invoke("presence_set_enabled", { enabled: e.target.checked });
+        updatePresence();
+    });
+    document.getElementById("presence-profile").addEventListener("change", async (e) => {
+        await invoke("presence_set_profile", { profile: Number(e.target.value) });
+        updatePresence();
+    });
+    document.getElementById("presence-trigger-btn").addEventListener("click", () => invoke("presence_trigger"));
+    document.getElementById("presence-reset-btn").addEventListener("click", () => invoke("presence_reset"));
+    updatePresence();
 }
 
 async function updateStats() {
@@ -772,6 +824,7 @@ async function fetchDeviceData() {
             setVal('scl_pin', c.hardware.scl_pin);
             setVal('button_pin', c.hardware.button_pin);
             setRadio('button_type', c.hardware.button_type);
+            setCb('presence_ble', c.hardware.presence_ble, true);
             updatePinSelects();
 
             setVal('refresh_min', c.general.refresh_min);
@@ -1145,6 +1198,8 @@ window.addEventListener("DOMContentLoaded", () => {
     
     setInterval(loadPorts, PORT_SCAN_INTERVAL_MS); 
     setInterval(updateStats, LOCAL_TELEMETRY_INTERVAL_MS); 
+    initPresence();
+    setInterval(updatePresence, PRESENCE_INTERVAL_MS);
     setInterval(fetchDeviceData, HARDWARE_SYNC_INTERVAL_MS); 
     setTimeout(fetchDeviceData, INITIAL_SYNC_DELAY_MS); 
 

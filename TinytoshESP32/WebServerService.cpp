@@ -172,6 +172,8 @@ void WebServerService::handleRoot() {
   add("<label class='radio-label'><input type='radio' name='button_type' value='switch' " + String(config.button_type == "switch" ? "checked" : "") + "> Switch Button</label></div>");
   add(buildPinSelect("button_pin", "Button GPIO Pin", config.button_pin, false));
   add("<p class='help-text mt-0'>Reboot Tinytosh to apply any hardware pin changes.</p>");
+  add("<label class='checkbox-label'><input type='checkbox' name='presence_ble' value='1' " + String(config.presence_ble ? "checked" : "") + "> Bluetooth Mouse (Presence)</label>");
+  add("<p class='help-text mt-0'>Tinytosh restarts when this changes. Then pair \"Tinytosh Mouse\" in your computer's Bluetooth settings and control it from Tinytosh PC.</p>");
   add("</div>");
 
   add("<div class='panel'><h3 class='panel-title'>Global Settings</h3>");
@@ -975,7 +977,7 @@ void WebServerService::handleRoot() {
   add("syncScreenOrder();");
   
   add("const CONFIG_FIELD_MAP = {");
-  add("  sda_pin: ['hardware','sda_pin'], scl_pin: ['hardware','scl_pin'], button_pin: ['hardware','button_pin'], button_type: ['hardware','button_type'],");
+  add("  sda_pin: ['hardware','sda_pin'], scl_pin: ['hardware','scl_pin'], button_pin: ['hardware','button_pin'], button_type: ['hardware','button_type'], presence_ble: ['hardware','presence_ble'],");
   add("  refresh_min: ['general','refresh_min'], time_format: ['general','time_format'], auto_detect: ['general','auto_detect'],");
   add("  latitude: ['general','latitude'], longitude: ['general','longitude'], country: ['general','country'], country_code: ['general','country_code'],");
   add("  city: ['general','city'], timezone: ['general','timezone'], ntp_server: ['general','ntp_server'], date_display: ['general','date_display'], time_style: ['general','time_style'], ui_chrome: ['general','ui_chrome'], ui_paper: ['general','ui_paper'],");
@@ -1076,6 +1078,7 @@ void WebServerService::handleRoot() {
   add("    setVal('scl_pin', c.hardware.scl_pin);");
   add("    setVal('button_pin', c.hardware.button_pin);");
   add("    setRadio('button_type', c.hardware.button_type);");
+  add("    setCb('presence_ble', c.hardware.presence_ble, true);");
   add("    updatePinSelects();");
 
   add("    setVal('refresh_min', c.general.refresh_min);");
@@ -1325,7 +1328,7 @@ void WebServerService::handlePcStats() {
   
   String body = server.arg("plain");
   
-  DynamicJsonDocument doc(1024); 
+  DynamicJsonDocument doc(1536);
   DeserializationError error = deserializeJson(doc, body);
   
   if (error) {
@@ -1357,7 +1360,9 @@ void WebServerService::handlePcStats() {
     state->media.album = doc["media_album"] | "";
     state->media.last_update = millis();
 
-    server.send(HTTP_OK, "application/json", "{\"status\":\"ok\"}");
+    String reply = "{\"status\":\"ok\"";
+    if (JsonSerializer::parsePresence(doc, *state)) reply += ",\"presence\":" + JsonSerializer::buildPresenceJson(state->presence);
+    server.send(HTTP_OK, "application/json", reply + "}");
   } else {
     server.send(HTTP_FORBIDDEN, "application/json", "{\"status\":\"error\", \"message\":\"Device is already paired to another PC\"}");
   }

@@ -13,6 +13,7 @@ void JsonSerializer::populateConfigDoc(const Config& config, JsonObject configOb
     hardware["scl_pin"] = config.scl_pin;
     hardware["button_pin"] = config.button_pin;
     hardware["button_type"] = config.button_type;
+    hardware["presence_ble"] = config.presence_ble ? 1 : 0;
 
     JsonObject general = configObj.createNestedObject("general");
     general["refresh_min"] = config.refresh_interval_min;
@@ -283,6 +284,7 @@ bool JsonSerializer::parseConfig(const char* jsonString, AppState& state) {
         if (g.containsKey("scl_pin")) config.scl_pin = g["scl_pin"];
         if (g.containsKey("button_pin")) config.button_pin = g["button_pin"];
         if (g.containsKey("button_type")) config.button_type = g["button_type"].as<String>();
+        if (g.containsKey("presence_ble")) config.presence_ble = g["presence_ble"] == 1;
     }
 
     if (doc.containsKey("general")) {
@@ -484,4 +486,39 @@ bool JsonSerializer::parseConfig(const char* jsonString, AppState& state) {
     if (!config.show_media) { state.media.status = "stopped"; state.media.name = ""; }
 
     return true;
+}
+
+
+bool JsonSerializer::parsePresence(JsonVariantConst stats, AppState& state) {
+    JsonObjectConst p = stats["presence"];
+    if (p.isNull()) return false;
+
+    Presence::Command& command = state.presence_command;
+    command.session = p["session"] | 0;
+    command.lease = p["lease"] | false;
+    command.lease_ms = p["lease_ms"] | 0;
+    command.paused = p["paused"] | false;
+    command.profile = p["profile"] | (int)Presence::PROFILE_BALANCED;
+    command.trigger_seq = p["trigger_seq"] | 0;
+    command.reset_seq = p["reset_seq"] | 0;
+    state.presence_command_fresh = true;
+    return true;
+}
+
+String JsonSerializer::buildPresenceJson(const Presence::Status& status) {
+    static const char* const LINKS[] = {"off", "advertising", "connected"};
+    StaticJsonDocument<256> doc;
+    doc["link"] = LINKS[status.link];
+    doc["paused"] = status.paused;
+    doc["leased"] = status.leased;
+    doc["moving"] = status.moving;
+    doc["profile"] = status.profile;
+    doc["last_gesture"] = status.last_gesture;
+    doc["next_sec"] = status.next_sec;
+    doc["pos_x"] = status.pos_x;
+    doc["pos_y"] = status.pos_y;
+    doc["count"] = status.count;
+    String output;
+    serializeJson(doc, output);
+    return output;
 }

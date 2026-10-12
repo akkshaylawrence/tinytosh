@@ -48,7 +48,7 @@ bool PcMonitorService::handleSerial(AppState &state) {
 }
 
 void PcMonitorService::parseJson(const char* jsonString, AppState &state) {
-    DynamicJsonDocument doc(1024); 
+    DynamicJsonDocument doc(1536);
     DeserializationError error = deserializeJson(doc, jsonString);
 
     if (!error) {
@@ -71,5 +71,10 @@ void PcMonitorService::parseJson(const char* jsonString, AppState &state) {
         state.pc.last_update = current_time; 
         state.pc.is_wifi = false;
         state.media.last_update = current_time;
+
+        if (JsonSerializer::parsePresence(doc, state)) {
+            Serial.print("PRESENCE:");
+            Serial.println(JsonSerializer::buildPresenceJson(state.presence));
+        }
     }
 }

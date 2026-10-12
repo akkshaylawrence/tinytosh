@@ -372,16 +372,18 @@ static long auditSpacing() {
   };
 
   for (const StyleCase& sc : chromes) {
-    for (const Scenario& scenario : SCENARIOS) {
-      AppState state = baseState();
-      fakeClock = "12:45";
-      setDate(2026, 10, 7, 3);
-      scenario.arrange(state);
-      elements.clear();
-      Panel panel;
-      Ui::Surface ui(panel, sc.style, fakeClock);
-      SCREENS[scenario.screen].draw(ui, state, 0);
-      check(panel, sc.tag, scenario.name);
+    for (Ui::Badge badge : {Ui::BADGE_NONE, Ui::BADGE_MOVING}) {
+      for (const Scenario& scenario : SCENARIOS) {
+        AppState state = baseState();
+        fakeClock = "12:45";
+        setDate(2026, 10, 7, 3);
+        scenario.arrange(state);
+        elements.clear();
+        Panel panel;
+        Ui::Surface ui(panel, sc.style, fakeClock, badge);
+        SCREENS[scenario.screen].draw(ui, state, 0);
+        check(panel, sc.tag, scenario.name);
+      }
     }
     for (const Card& card : CARDS) {
       elements.clear();
@@ -405,21 +407,25 @@ static long drawScreens() {
   for (const StyleCase& sc : styles) {
     Sheet sheet;
     gallery += std::string("\"") + sc.tag + "\":[";
-    for (const Scenario& scenario : SCENARIOS) {
-      AppState state = baseState();
-      fakeClock = "12:45";
-      setDate(2026, 10, 7, 3);
-      scenario.arrange(state);
+    // Every screen is drawn with every mouse badge. The sheet shows the badges on two of them.
+    for (Ui::Badge badge : {Ui::BADGE_NONE, Ui::BADGE_SEARCHING, Ui::BADGE_IDLE, Ui::BADGE_MOVING}) {
+      for (const Scenario& scenario : SCENARIOS) {
+        AppState state = baseState();
+        fakeClock = "12:45";
+        setDate(2026, 10, 7, 3);
+        scenario.arrange(state);
 
-      Panel panel;
-      Ui::Surface ui(panel, sc.style, fakeClock);
-      SCREENS[scenario.screen].draw(ui, state, 0);
-      ui.finish();
+        Panel panel;
+        Ui::Surface ui(panel, sc.style, fakeClock, badge);
+        SCREENS[scenario.screen].draw(ui, state, 0);
+        ui.finish();
 
-      if (panel.outOfBounds) printf("  %-14s %-26s out-of-bounds=%ld\n", sc.tag, scenario.name, panel.outOfBounds);
-      total += panel.outOfBounds;
-      sheet.add(panel);
-      addToGallery(scenario.name, panel);
+        if (panel.outOfBounds) printf("  %-14s %-26s out-of-bounds=%ld\n", sc.tag, scenario.name, panel.outOfBounds);
+        total += panel.outOfBounds;
+        const std::string name = scenario.name;
+        if (badge == Ui::BADGE_NONE || name == "pc" || name == "population-long-name") sheet.add(panel);
+        if (badge == Ui::BADGE_NONE) addToGallery(scenario.name, panel);
+      }
     }
 
     for (const Card& card : CARDS) {

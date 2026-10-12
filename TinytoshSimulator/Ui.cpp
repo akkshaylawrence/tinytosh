@@ -15,6 +15,10 @@ const int SMALL_BASELINE = 4;
 const int ELLIPSIS_W = 6;
 const int MAX_PARAGRAPH_LINES = 4;
 const int GAP = 2;
+const int GLYPH_W = 7;
+const unsigned long BADGE_BLINK_MS = 500;
+const unsigned long BADGE_INVERT_MS = 240;
+const unsigned long BADGE_FRAME_MS = 80;
 
 const char* asciiFor(uint32_t cp) {
   switch (cp) {
@@ -355,11 +359,44 @@ void Canvas::statGrid(const Stat* stats, int count, int x, int w) {
   }
 }
 
-Surface::Surface(Adafruit_GFX& g, Style style, const String& clock)
-  : g_(g), style_(style), clock_(clock) {}
+Surface::Surface(Adafruit_GFX& g, Style style, const String& clock, Badge badge)
+  : g_(g), style_(style), clock_(clock), badge_(badge) {}
+
+// How far the marching pattern has moved, in pixels. The whole bar marches during a gesture,
+// because a 7 pixel badge alone is easy to miss from across a desk.
+static int marchOffset() {
+  return 7 - (millis() / BADGE_FRAME_MS * 2) % 8;
+}
+
+// x is the mouse's left edge. ink is the colour that shows against the bar behind it.
+void Surface::badge(int x, uint16_t ink) {
+  static const uint8_t OUTLINE[] PROGMEM = {0x7C, 0x92, 0xFE, 0x82, 0x82, 0x82, 0x7C};
+  static const uint8_t SOLID[] PROGMEM = {0x7C, 0xEE, 0xFE, 0xFE, 0xFE, 0xFE, 0x7C};
+  const int y = 1;
+  const unsigned long now = millis();
+
+  if (badge_ == BADGE_SEARCHING) {
+    // Blinks, because this is the state that needs someone to act.
+    if (now / BADGE_BLINK_MS % 2 == 0) g_.drawBitmap(x, y, SOLID, GLYPH_W, GLYPH_W, ink);
+  } else if (badge_ == BADGE_IDLE) {
+    g_.drawBitmap(x, y, OUTLINE, GLYPH_W, GLYPH_W, ink);
+  } else if (badge_ == BADGE_MOVING) {
+    // Flips between a mouse on the bar and a mouse cut out of a block.
+    const bool inverted = now / BADGE_INVERT_MS % 2;
+    if (inverted) g_.fillRect(x - 1, y, GLYPH_W + 2, GLYPH_W, ink);
+    g_.drawBitmap(x, y, SOLID, GLYPH_W, GLYPH_W, inverted ? (ink == ON ? OFF : ON) : ink);
+  }
+}
 
 void Surface::menuBar(const String& title, bool showClock) {
   g_.fillRect(0, 0, SCREEN_W, 9, ON);
+  if (badge_ == BADGE_MOVING) {
+    const int march = marchOffset();
+    // Only the bar's outer rows march. The rows between hold the title and the clock.
+    for (int y : {0, 8}) {
+      for (int x = 0; x < SCREEN_W; x++) if ((x + y + march) % 8 < 4) g_.drawPixel(x, y, OFF);
+    }
+  }
   g_.fillRect(3, 3, 4, 4, OFF);
   g_.drawPixel(5, 2, OFF);
 
@@ -368,7 +405,12 @@ void Surface::menuBar(const String& title, bool showClock) {
   const String clock = showClock ? clock_ : String("");
   int clockW = bar.textWidth(clock, FONT_SMALL);
   bar.textRight(clock, SCREEN_W - 2, 2, FONT_SMALL);
-  bar.textFit(title, 12, 2, SCREEN_W - 12 - clockW - 8, FONT_SMALL);
+  int rightW = clockW;
+  if (badge_ != BADGE_NONE) {
+    rightW += GLYPH_W + (clockW > 0 ? 3 : 1);
+    badge(SCREEN_W - 2 - rightW, OFF);
+  }
+  bar.textFit(title, 12, 2, SCREEN_W - 12 - rightW - 8, FONT_SMALL);
 }
 
 Canvas Surface::frame(const String& title, const String& corner, bool showClock) {
@@ -380,23 +422,43 @@ Canvas Surface::frame(const String& title, const String& corner, bool showClock)
   }
 
   g_.drawRect(0, 0, SCREEN_W, SCREEN_H, ON);
-  for (int y = 2; y <= 6; y += 2) g_.drawFastHLine(2, y, SCREEN_W - 4, ON);
+  if (badge_ == BADGE_MOVING) {
+    const int march = marchOffset();
+    for (int y = 2; y <= 6; y += 2) {
+      for (int x = 2; x < SCREEN_W - 2; x++) if ((x + y + march) % 8 < 5) g_.drawPixel(x, y, ON);
+    }
+  } else {
+    for (int y = 2; y <= 6; y += 2) g_.drawFastHLine(2, y, SCREEN_W - 4, ON);
+  }
   g_.drawFastHLine(0, 8, SCREEN_W, ON);
   g_.fillRect(7, 1, 9, 7, OFF);
   g_.drawRect(9, 2, 5, 5, ON);
+  // The badge mirrors the close box at the other end of the title bar, and pushes any corner
+  // text to its left.
+  int rightEdge = SCREEN_W - 4;
+  if (badge_ != BADGE_NONE) {
+    const int boxX = SCREEN_W - 7 - (GLYPH_W + 2);
+    g_.fillRect(boxX, 1, GLYPH_W + 2, 7, OFF);
+    badge(boxX + 1, ON);
+    rightEdge = boxX - 2;
+  }
 
   Canvas bar(g_, 0, 0, SCREEN_W, 9, false);
   int cornerW = bar.textWidth(corner, FONT_SMALL);
   if (cornerW > 0) {
-    g_.fillRect(SCREEN_W - 7 - cornerW, 1, cornerW + 5, 7, OFF);
-    bar.textRight(corner, SCREEN_W - 4, 2, FONT_SMALL);
+    g_.fillRect(rightEdge - 3 - cornerW, 1, cornerW + 5, 7, OFF);
+    bar.textRight(corner, rightEdge, 2, FONT_SMALL);
   }
-  // A centred title may only grow as far as the nearer of the close box and the corner text.
-  const int side = cornerW > 0 ? cornerW + 12 : 22;
-  const int maxTitleW = SCREEN_W - 2 * side;
+  // A title is centred on the panel, and may only grow as far as the nearer of the close box and
+  // whatever sits on the right. With a badge the right is crowded, so it centres in what is left.
+  const int leftUsed = 22;
+  const bool centred = badge_ == BADGE_NONE;
+  const int rightUsed = SCREEN_W - rightEdge + (cornerW > 0 ? cornerW + 8 : centred ? 18 : 4);
+  const int side = rightUsed > leftUsed ? rightUsed : leftUsed;
+  const int maxTitleW = centred ? SCREEN_W - 2 * side : SCREEN_W - leftUsed - rightUsed;
   int titleW = bar.textWidth(title, FONT_SMALL);
   if (titleW > maxTitleW) titleW = maxTitleW;
-  const int titleX = (SCREEN_W - titleW) / 2;
+  const int titleX = centred ? (SCREEN_W - titleW) / 2 : leftUsed + (maxTitleW - titleW) / 2;
   g_.fillRect(titleX - 3, 1, titleW + 6, 7, OFF);
   bar.textFit(title, titleX, 2, maxTitleW, FONT_SMALL);
 

@@ -15,6 +15,7 @@
 #include "NightModeService.h"
 #include "PcMonitorService.h"
 #include "PopulationService.h"
+#include "PresenceService.h"
 #include "structs.h"
 #include "TimeService.h"
 #include "WeatherService.h"
@@ -53,6 +54,7 @@ PcMonitorService pcMonitorService;
 BambuService bambuService;
 DataSyncService dataSyncService;
 NightModeService nightModeService;
+PresenceService presenceService;
 
 unsigned long lastScreenSwitch = 0;
 
@@ -177,6 +179,8 @@ void setup() {
   // 5. Initialize Web Server
   webServerService.setAppState(&appState);
   webServerService.begin();
+
+  if (appState.config.presence_ble) presenceService.begin("Tinytosh Mouse");
 }
 
 void loop() {
@@ -188,6 +192,20 @@ void loop() {
     Serial.println("Config updated via USB! Saving and applying...");
     configManager.saveConfig(appState.config);
     updateAllData();
+  }
+
+  // The Bluetooth stack is only brought up at boot, and its memory does not come back.
+  if (appState.config.presence_ble != presenceService.running()) {
+    Serial.println("Bluetooth mouse setting changed. Restarting...");
+    delay(200);
+    ESP.restart();
+  }
+  if (presenceService.running()) {
+    if (appState.presence_command_fresh) {
+      appState.presence_command_fresh = false;
+      presenceService.submit(appState.presence_command);
+    }
+    appState.presence = presenceService.status();
   }
 
   // 1. Night Latch Logic
@@ -236,7 +254,8 @@ void loop() {
 
     unsigned long refreshInterval = nightModeService.isLatched() ? nightModeService.getRefreshIntervalMs(activeAction) : displayService.refreshIntervalMs(appState);
 
-    if (nightModeService.isRedrawDue(refreshInterval)) {
+    const bool badgeChanged = displayService.badgeChanged(appState);
+    if (nightModeService.isRedrawDue(refreshInterval) || badgeChanged) {
       if (nightModeService.isLatched()) {
         if (activeAction == 1 || isTemporarilyAwake) {
           displayService.setContrast(true);

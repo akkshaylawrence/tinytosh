@@ -19,6 +19,7 @@ use futures::StreamExt;
 #[cfg(not(target_os = "macos"))]
 use nowhear::{MediaEvent, MediaSourceBuilder, MediaSource};
 
+mod presence;
 mod sonos;
 
 // Main Loop
@@ -65,6 +66,7 @@ struct AppState {
     sonos_media: Mutex<MediaStats>,
     device_logs: Mutex<Vec<String>>,
     log_reading_enabled: Mutex<bool>,
+    presence: Mutex<presence::Presence>,
 }
 
 #[derive(serde::Serialize, Clone, Default, PartialEq, Debug)]
@@ -98,6 +100,7 @@ struct BridgeStats {
     disk_percent: u64,
     #[serde(flatten)]
     media: MediaStats,
+    presence: presence::Command,
 }
 
 #[derive(serde::Serialize)]
@@ -244,6 +247,24 @@ async fn save_device_settings(state: tauri::State<'_, AppState>, json_payload: S
     }
 }
 
+struct PresenceMenuItem(MenuItem<tauri::Wry>);
+
+fn refresh_presence_menu(app: &tauri::AppHandle) {
+    let enabled = app.state::<AppState>().presence.lock().unwrap().enabled();
+    let label = if enabled { "Disable Presence" } else { "Enable Presence" };
+    let _ = app.state::<PresenceMenuItem>().0.set_text(label);
+}
+
+fn presence_reply(state: &AppState, sent: &presence::Command, response: ureq::Response) {
+    let mut presence = state.presence.lock().unwrap();
+    presence.sent(sent);
+    let body = response.into_string().unwrap_or_default();
+    let reply: serde_json::Value = serde_json::from_str(&body).unwrap_or_default();
+    if let Some(status) = reply.get("presence") {
+        presence.receive(&status.to_string());
+    }
+}
+
 fn show_window_safely(app_handle: &tauri::AppHandle, window: tauri::WebviewWindow) {
     #[cfg(target_os = "macos")]
     let _ = app_handle.set_activation_policy(tauri::ActivationPolicy::Regular);
@@ -271,6 +292,7 @@ fn main() {
         sonos_media: Mutex::new(MediaStats::default()),
         device_logs: Mutex::new(Vec::new()),
         log_reading_enabled: Mutex::new(false),
+        presence: Mutex::new(presence::Presence::default()),
     };
 
     let my_pc_id = match get_mac_address() {
@@ -288,7 +310,9 @@ fn main() {
         .manage(app_state) 
         .invoke_handler(tauri::generate_handler![
             get_stats, get_ports, toggle_connection, set_autostart, check_autostart,
-            fetch_device_data, save_device_settings, get_logs, toggle_logging
+            fetch_device_data, save_device_settings, get_logs, toggle_logging,
+            presence::presence_get, presence::presence_set_enabled, presence::presence_set_profile,
+            presence::presence_trigger, presence::presence_reset, presence::presence_set_watch
         ])
         .setup(move |app| {
             let args: Vec<String> = env::args().collect();
@@ -301,15 +325,27 @@ fn main() {
                 let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
             }
 
+            presence::start(app.handle());
+
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
+            let presence_i = MenuItem::with_id(app, "presence", "", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&show_i, &presence_i, &quit_i])?;
+            app.manage(PresenceMenuItem(presence_i));
+            refresh_presence_menu(app.handle());
             let icon = app.default_window_icon().unwrap().clone();
             
             let _tray = TrayIconBuilder::new().icon(icon).menu(&menu)
                 .on_menu_event(|app: &tauri::AppHandle, event| {
                     match event.id().as_ref() {
-                        "quit" => app.exit(0),
+                        "quit" => {
+                            presence::will_quit(app);
+                            app.exit(0)
+                        }
+                        "presence" => {
+                            let enabled = !app.state::<AppState>().presence.lock().unwrap().enabled();
+                            presence::presence_set_enabled(app.clone(), app.state::<AppState>(), enabled);
+                        }
                         "show" => { if let Some(w) = app.get_webview_window("main") { show_window_safely(app, w); } }
                         _ => {}
                     }
@@ -565,13 +601,17 @@ fn main() {
                     let sonos_media = state.sonos_media.lock().unwrap().clone();
                     let media_data = pick_media(&local_media, &sonos_media);
 
+                    let over_wifi = matches!(phase, AppPhase::TestWifi(_) | AppPhase::ConnectedWifi);
+                    let presence_command = state.presence.lock().unwrap().command(over_wifi);
+
                     let data = BridgeStats { 
                         pc_id: thread_pc_id.clone(),
                         cpu_percent: cpu, 
                         net_down_kb: download_kb, 
                         mem_percent: ram, 
                         disk_percent: disk_usage,
-                        media: media_data
+                        media: media_data,
+                        presence: presence_command.clone(),
                     };
                     
                     let payload = serde_json::to_string(&data).unwrap_or("{}".to_string());
@@ -585,6 +625,7 @@ fn main() {
                         *state.active_port_name.lock().unwrap() = String::new();
                         *state.target_wifi_ip.lock().unwrap() = String::new();
                         *state.status_msg.lock().unwrap() = "⏸️ Disconnected".to_string();
+                        state.presence.lock().unwrap().link_lost();
                         phase = AppPhase::Idle;
                         thread::sleep(Duration::from_millis(LOOP_INTERVAL_MS));
                         continue;
@@ -632,6 +673,7 @@ fn main() {
                         
                         AppPhase::InitScan => {
                             *state.status_msg.lock().unwrap() = "🔍 Scanning for devices...".to_string();
+                            state.presence.lock().unwrap().link_lost();
                             *state.active_port_name.lock().unwrap() = String::new();
                             *state.target_wifi_ip.lock().unwrap() = String::new();
                             if state.port.lock().unwrap().is_some() { *state.port.lock().unwrap() = None; }
@@ -694,6 +736,8 @@ fn main() {
                                     if line.starts_with("SYS_UPDATE:") {
                                         *state.latest_config.lock().unwrap() = line[11..].to_string();
                                         handshake_success = true; 
+                                    } else if let Some(json) = line.strip_prefix("PRESENCE:") {
+                                        state.presence.lock().unwrap().receive(json);
                                     } else if !line.is_empty() && log_enabled {
                                         state.device_logs.lock().unwrap().push(line);
                                     }
@@ -737,7 +781,8 @@ fn main() {
                             let url = format!("http://{}/pc-stats", ip);
                             
                             match agent.post(&url).set("Content-Type", "application/json").set("Connection", "close").send_string(&payload) {
-                                Ok(_) => {
+                                Ok(response) => {
+                                    presence_reply(&state, &presence_command, response);
                                     let wifi_map = state.discovered_wifi.lock().unwrap();
                                     let pretty_name = wifi_map.get(ip).unwrap_or(ip).clone();
                                     *state.active_port_name.lock().unwrap() = format!("WiFi: {} ({})", pretty_name, ip);
@@ -786,6 +831,8 @@ fn main() {
                                 // 2. Continuous data push
                                 if port.write(format!("{}\n", payload).as_bytes()).is_err() {
                                     connection_lost = true;
+                                } else {
+                                    state.presence.lock().unwrap().sent(&presence_command);
                                 }
 
                                 // 3. Always attempt to read incoming messages
@@ -802,6 +849,8 @@ fn main() {
                                         let line = buf[..newline_offset].trim().to_string();
                                         if line.starts_with("SYS_UPDATE:") {
                                             *state.latest_config.lock().unwrap() = line[11..].to_string();
+                                        } else if let Some(json) = line.strip_prefix("PRESENCE:") {
+                                            state.presence.lock().unwrap().receive(json);
                                         } else if !line.is_empty() && log_enabled {
                                             state.device_logs.lock().unwrap().push(line);
                                         }
@@ -827,7 +876,8 @@ fn main() {
                                 let url = format!("http://{}/pc-stats", ip);
                                 
                                 match agent.post(&url).set("Content-Type", "application/json").set("Connection", "close").send_string(&payload) {
-                                    Ok(_) => { 
+                                    Ok(response) => { 
+                                        presence_reply(&state, &presence_command, response);
                                         wifi_failures = 0; 
                                         *state.status_msg.lock().unwrap() = "📶 Connected via WiFi".to_string(); 
                                     }

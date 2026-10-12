@@ -54,6 +54,7 @@
 * **👻 Smart Auto-Hide:** PC Monitor and PC Media screens can intelligently hide themselves and skip rotation when your PC is off, disconnected, or no media is playing.
 * **⏱️ Custom Data Sync Intervals:** Override the global refresh rate on a per-screen basis. Set Weather, Air Quality, or Currency to sync more (or less) often than the rest of your dashboard.
 * **🌙 Night Mode & Power Saving:** Set a quiet schedule to minimize sleep distractions. Choose between *Dim Display*, *Turn Display Off*, or *Dim then Turn Off* (featuring an extra time picker for gradual dimming). Features "Smart Latching" (waits for the primary screen before sleeping), 10x slower background API fetching to save power, and a temporary 30-second wake feature via the physical button.
+* **🖱️ Presence (Bluetooth Mouse):** Tinytosh can pair with your computer as a Bluetooth mouse and nudge the pointer with human-looking strokes, scrolls and pauses, so the computer stays active. It only moves while the PC App is running, the display is on, and (on macOS) one of the apps you picked is open. A small mouse in the title bar shows its state: dotted while unpaired, outlined while idle, solid during a gesture. Off by default; turn it on under **Hardware Setup**.
 * **🆓 Zero Config APIs:** Uses free public APIs. No API keys required.
 * **🔒 Privacy First:** No accounts, no cloud tracking. Everything runs locally on the ESP32.
 
@@ -76,6 +77,7 @@ The firmware is designed to be **non-blocking** and **modular**.
 * **🌐 mDNS Support:** Easily access the device's Web Panel without memorizing IPs using its unique local domain (e.g., `http://tinytosh-ab12.local`).
 * **🔐 Hardware Pairing Lock:** Telemetry streams are protected. Tinytosh securely pairs to the active PC to ensure multiple computers on the same network don't fight over the display.
 * **🧰 UI Library & Screen Registry:** `Ui.h` draws the Mac frame, fonts and widgets, and gives every screen the same 124x52 canvas. Each screen is one `Screen*.cpp` file plus one row in the `SCREENS` table in `Screens.cpp`, so adding a screen touches no navigation or rendering code. `tools/ui-harness/run.sh` draws every screen in every style on your computer and fails if a pixel leaves the panel.
+* **🖱️ Presence Engine:** `PresenceEngine` plans minimum-jerk strokes inside a ±75 x ±50 px box and holds no clock, radio or random source of its own, so `tools/presence-harness/run.sh` runs it on your computer against a fake clock. `PresenceService` runs it on its own task over a BLE HID mouse. It moves only while the PC App keeps renewing a short lease, which travels with every stats message.
 * **🖼️ Dynamic Rendering:** The `DisplayService` handles the OLED. It supports "partial screen buffering," allowing for complex transition effects (like dissolving pixels or sliding curtains) without needing a massive frame buffer.
 
 #### 🏗️ Build & Compile Guide
@@ -135,8 +137,9 @@ lib_deps =
 * `Wire.h` (I2C)
 * `time.h`
 * `ESPmDNS.h`
+* `BLEDevice.h` & `BLEHIDDevice.h` (Bluetooth mouse)
 
-> ⚠️ **Partition Scheme:** The firmware is about 1.6 MB, which is larger than the default 1.2 MB app slot. In the Arduino IDE choose **Tools → Partition Scheme → Huge APP (3MB No OTA/1MB SPIFFS)** before compiling, or the build stops with *"text section exceeds available space in board"*. Tinytosh keeps its settings in NVS and does not use OTA updates or a filesystem, so nothing is lost. The PlatformIO config above already sets this with `board_build.partitions`. To rebuild the web installer image from the command line, run `tools/build-firmware.sh`.
+> ⚠️ **Partition Scheme:** The firmware is about 1.9 MB, which is larger than the default 1.2 MB app slot. In the Arduino IDE choose **Tools → Partition Scheme → Huge APP (3MB No OTA/1MB SPIFFS)** before compiling, or the build stops with *"text section exceeds available space in board"*. Tinytosh keeps its settings in NVS and does not use OTA updates or a filesystem, so nothing is lost. The PlatformIO config above already sets this with `board_build.partitions`. To rebuild the web installer image from the command line, run `tools/build-firmware.sh`.
 
 ### 2. PC Bridge App (Desktop)
 *Written in Rust 🦀 & Tauri.*
@@ -146,6 +149,7 @@ To display PC statistics (CPU/RAM/Net) and manage device settings, the ESP32 use
 * **Dynamic UI Rendering:** The PC app dashboard physically mirrors your device! Configuration panels automatically reorder themselves in real-time to match the exact screen sequence you set on your Tinytosh.
 * **Wireless Telemetry (mDNS):** The PC app automatically discovers Tinytosh devices on your local network. You can broadcast your PC's hardware stats completely wirelessly!
 * **Smart Connection Fallback:** The app constantly monitors your hardware and instantly prioritizes a wired USB connection for maximum stability. Yank the USB cable? The app instantly and silently falls back to Wi-Fi to keep the data flowing with zero hesitation.
+* **Presence Control:** Enable or pause the Bluetooth mouse, pick a **Stealth**, **Balanced** or **Aggressive** profile, trigger a gesture, or re-center the pointer, from the window or the tray menu. The app is what lets the device move: quit it, sleep the computer or turn the display off and the pointer goes still within seconds. On macOS, **Run Only While Open** limits movement to the apps you tick.
 * **Native Telemetry:** Fetches system stats directly from the OS kernel—no third-party bloatware (like AIDA64) required.
 
 **Build it yourself:**
@@ -209,6 +213,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 | Version | Date | Key Changes |
 | :--- | :--- | :--- |
+| **v1.2.0** | *Oct 2026* | 🖱️ Added **Presence**: Tinytosh pairs as a **Bluetooth mouse** and keeps the computer active with human-looking pointer gestures, controlled from the PC App (v1.3.0). A mouse badge in the title bar or menu bar shows when it is unpaired, idle or moving. Off by default. |
 | **v1.1.9** | *Oct 2026* | 📏 The **Air Quality** screen's readings sit a little further from the divider in the layout without a header. |
 | **v1.1.8** | *Oct 2026* | 🍎 Every screen now has the **classic Mac look**: a System 1 window with a striped title bar, Mac progress bars, and alert boxes. Choose **Window** or **Menu Bar** framing and **Black** or **White** paper in the Web Panel or PC App. 🙂 Startup is now a Mac boot sequence with a happy Mac and a progress bar, and a sad Mac if WiFi fails. |
 | **v1.1.7** | *Oct 2026* | 🖥️ Added the **Screensaver** screen with four animated scenes: MacPaint, Spinning Mac, Life, and a live Weather scene. Choose the scenes in the Web Panel or PC App. 🕰️ Added a **Mac Desktop** clock style for the Time screen. Animated screens redraw at 25 fps; every other screen is unchanged. Saved settings carry over and gain the new screen at the end of the order. |

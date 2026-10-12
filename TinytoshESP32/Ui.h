@@ -32,6 +32,11 @@ struct Style {
 
 Style styleFrom(const String& chrome, const String& paper);
 
+// The Bluetooth mouse's state, shown at the right of the title bar or menu bar. SEARCHING is a
+// blinking solid mouse (no host connected), IDLE an outlined mouse. MOVING is a solid mouse that
+// runs back and forth while the whole bar marches. SEARCHING and MOVING animate off millis().
+enum Badge : uint8_t { BADGE_NONE, BADGE_SEARCHING, BADGE_IDLE, BADGE_MOVING };
+
 // SMALL is the 5 px label face and always prints upper case. The rest are the 5x7 face at 1x to 4x.
 enum Font : uint8_t { FONT_SMALL, FONT_NORMAL, FONT_LARGE, FONT_HUGE, FONT_GIANT };
 
@@ -125,7 +130,7 @@ private:
 
 class Surface {
 public:
-  Surface(Adafruit_GFX& g, Style style, const String& clock);
+  Surface(Adafruit_GFX& g, Style style, const String& clock, Badge badge = BADGE_NONE);
 
   // The standard frame. corner is extra text for the window title bar. The menu bar shows the
   // clock there on its own, unless the screen is itself a clock or the time is not yet known.
@@ -146,9 +151,11 @@ private:
   Adafruit_GFX& g_;
   const Style style_;
   const String clock_;
+  const Badge badge_;
   int paperY_ = -1;
 
   void menuBar(const String& title, bool showClock);
+  void badge(int x, uint16_t ink);
 };
 
 // Folds accented Latin letters to ASCII and drops anything else the fonts cannot draw.

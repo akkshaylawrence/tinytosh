@@ -3,6 +3,8 @@
 
 #include <Arduino.h>
 
+#include "PresenceEngine.h"
+
 const int MAX_MULTI_ENTRIES = 5;
 const int MAX_RADAR_AIRCRAFT = 6;
 
@@ -68,6 +70,7 @@ struct Config {
   int scl_pin = 9;
   int button_pin = 10;
   String button_type = "touch";
+  bool presence_ble = false;         // start the Bluetooth mouse at boot; a change restarts the device
 
   // Global Settings
   bool auto_detect = true;
@@ -448,5 +451,8 @@ struct AppState {
   PcMedia media;
   BambuData bambu;
   FlightData flight;
+  Presence::Status presence;
+  Presence::Command presence_command;   // the host's latest, waiting for loop() to hand it on
+  bool presence_command_fresh = false;
 };
 #endif

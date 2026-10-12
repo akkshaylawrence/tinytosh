@@ -85,6 +85,30 @@
         </div>
       </div>
 
+      <div class="panel">
+        <div class="panel-header-flex">
+          <h3 class="panel-title">Presence</h3>
+          <div class="panel-header-actions">
+            <button type="button" id="presence-trigger-btn" class="btn-secondary btn-small" disabled>MOVE NOW</button>
+            <button type="button" id="presence-reset-btn" class="btn-secondary btn-small" disabled>RE-CENTER</button>
+          </div>
+        </div>
+        <p id="presence-status" class="status-badge">No device</p>
+        <label class="checkbox-label"><input type="checkbox" id="presence-enabled"> Keep this computer active</label>
+        <p class="help-text mt-0">Tinytosh nudges the pointer as a Bluetooth mouse while this app is running and the display is on.</p>
+        <label>Profile:</label>
+        <select id="presence-profile">
+          <option value="1">Stealth (tiny drifts, 35-90 s apart)</option>
+          <option value="2">Balanced (moves, scrolls, bursts and pauses)</option>
+          <option value="3">Aggressive (a stroke every 14-32 s)</option>
+        </select>
+        <div id="presence-watch-box" class="hidden">
+          <label>Run Only While Open:</label>
+          <p class="help-text mt-0">Tick apps to move only while one of them is running. Leave all unticked to move any time.</p>
+          <div id="presence-watch-list"></div>
+        </div>
+      </div>
+
       <form id="settings-form">
         <div id="config-placeholder" class="no-data-tile mt-0" style="margin-bottom: 25px;">
           Device configuration will be displayed after connection is established.
@@ -112,6 +136,8 @@
             <label>Button GPIO Pin:</label>
             <select name="button_pin" class="hw-pin"></select>
             <p class="help-text mt-0">Reboot Tinytosh to apply any hardware pin changes.</p>
+            <label class="checkbox-label"><input type="checkbox" name="presence_ble" value="1"> Bluetooth Mouse (Presence)</label>
+            <p class="help-text mt-0">Tinytosh restarts when this changes. Then pair "Tinytosh Mouse" in this computer's Bluetooth settings.</p>
           </div>
 
           <div class="panel">

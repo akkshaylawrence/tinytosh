@@ -8,9 +8,10 @@
 
 namespace {
 
-Ui::Surface surfaceFor(Adafruit_GFX& display, const Config& config) {
-  return Ui::Surface(display, Ui::styleFrom(config.ui_chrome, config.ui_paper), ScreenHost::clock(config.time_format));
+Ui::Surface surfaceFor(Adafruit_GFX& display, const Config& config, Ui::Badge badge = Ui::BADGE_NONE) {
+  return Ui::Surface(display, Ui::styleFrom(config.ui_chrome, config.ui_paper), ScreenHost::clock(config.time_format), badge);
 }
+
 
 int pageCount(const AppState& state, int screenIndex) {
   const ScreenDef& screen = SCREENS[screenIndex];
@@ -64,7 +65,8 @@ bool DisplayService::isScreenEnabled(const AppState& state, int screenIndex) {
 
 void DisplayService::drawScreen(int screenIndex, const AppState& state, int subIndex) {
     display.clearDisplay();
-    Ui::Surface ui = surfaceFor(display, state.config);
+    drawnBadge = badge;
+    Ui::Surface ui = surfaceFor(display, state.config, (Ui::Badge)badge);
     SCREENS[screenIndex].draw(ui, state, subIndex);
     ui.finish();
 }
@@ -170,7 +172,23 @@ void DisplayService::switchToPreviousScreen(const AppState& state) {
 unsigned long DisplayService::refreshIntervalMs(const AppState& state) const {
     const ScreenDef& screen = SCREENS[currentScreen];
     bool animated = screen.animated && screen.animated(state);
-    return animated ? ANIMATED_REFRESH_MS : STATIC_REFRESH_MS;
+    if (animated) return ANIMATED_REFRESH_MS;
+    if (badge == Ui::BADGE_MOVING) return BADGE_MOVING_REFRESH_MS;
+    if (badge == Ui::BADGE_SEARCHING) return BADGE_BLINK_REFRESH_MS;
+    return STATIC_REFRESH_MS;
+}
+
+bool DisplayService::badgeChanged(const AppState& state) {
+    const Presence::Status& presence = state.presence;
+    // A stroke can be over in a fifth of a second. Holding the badge makes it long enough to see,
+    // and the gesture count catches a stroke that started and ended between two looks.
+    if (presence.moving || presence.count != seenGestures) movingUntil = millis() + MOVING_HOLD_MS;
+    seenGestures = presence.count;
+
+    if (presence.link == Presence::LINK_OFF) badge = Ui::BADGE_NONE;
+    else if (presence.link == Presence::LINK_ADVERTISING) badge = Ui::BADGE_SEARCHING;
+    else badge = (long)(movingUntil - millis()) > 0 ? Ui::BADGE_MOVING : Ui::BADGE_IDLE;
+    return badge != drawnBadge;
 }
 
 void DisplayService::setContrast(bool dim) {
