@@ -143,7 +143,9 @@ public:
   // A framed window of up to five centred lines, for values the user has to read off.
   void notice(const String& title, const String* lines, int count);
   // For scenes that paint the whole panel themselves. Paper colour is not applied to them.
-  Adafruit_GFX& raw() { return g_; }
+  // They have no bar for the mouse badge, so finish() puts it on a tab in the top right corner,
+  // and only while the mouse is unpaired or moving.
+  Adafruit_GFX& raw() { rawScene_ = true; return g_; }
   // Applies the paper colour. Call once, after the screen has drawn.
   void finish();
 
@@ -153,6 +155,7 @@ private:
   const String clock_;
   const Badge badge_;
   int paperY_ = -1;
+  bool rawScene_ = false;
 
   void menuBar(const String& title, bool showClock);
   void badge(int x, uint16_t ink);

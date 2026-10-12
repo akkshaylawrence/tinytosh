@@ -518,6 +518,16 @@ void Surface::notice(const String& title, const String* lines, int count) {
 }
 
 void Surface::finish() {
+  // An idle mouse is left off these scenes, and the tab blinks away whole with the mouse.
+  const bool blinkedOff = badge_ == BADGE_SEARCHING && millis() / BADGE_BLINK_MS % 2;
+  if (rawScene_ && (badge_ == BADGE_MOVING || badge_ == BADGE_SEARCHING) && !blinkedOff) {
+    // A lit tab reads over a dark scene and blends into a lit menu bar.
+    const int tabW = GLYPH_W + 4;
+    g_.fillRect(SCREEN_W - tabW - 1, 0, tabW + 1, 10, OFF);
+    g_.fillRect(SCREEN_W - tabW, 0, tabW, 9, ON);
+    badge(SCREEN_W - tabW + 2, OFF);
+  }
+  rawScene_ = false;
   if (style_.whitePaper && paperY_ >= 0) g_.fillRect(0, paperY_, SCREEN_W, SCREEN_H - paperY_, INVERSE);
   paperY_ = -1;
 }
