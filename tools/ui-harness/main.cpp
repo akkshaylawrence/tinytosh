@@ -372,7 +372,7 @@ static long auditSpacing() {
   };
 
   for (const StyleCase& sc : chromes) {
-    for (Ui::Badge badge : {Ui::BADGE_NONE, Ui::BADGE_MOVING}) {
+    for (Ui::Badge badge : {Ui::BADGE_NONE, Ui::BADGE_MOVING, Ui::BADGE_SLEEPING}) {
       for (const Scenario& scenario : SCENARIOS) {
         AppState state = baseState();
         fakeClock = "12:45";
@@ -408,7 +408,7 @@ static long drawScreens() {
     Sheet sheet;
     gallery += std::string("\"") + sc.tag + "\":[";
     // Every screen is drawn with every mouse badge. The sheet shows the badges on two of them.
-    for (Ui::Badge badge : {Ui::BADGE_NONE, Ui::BADGE_SEARCHING, Ui::BADGE_IDLE, Ui::BADGE_MOVING}) {
+    for (Ui::Badge badge : {Ui::BADGE_NONE, Ui::BADGE_SEARCHING, Ui::BADGE_IDLE, Ui::BADGE_MOVING, Ui::BADGE_SLEEPING}) {
       for (const Scenario& scenario : SCENARIOS) {
         AppState state = baseState();
         fakeClock = "12:45";

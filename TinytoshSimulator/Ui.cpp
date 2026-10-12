@@ -18,6 +18,7 @@ const int GAP = 2;
 const int GLYPH_W = 7;
 const unsigned long BADGE_BLINK_MS = 500;
 const unsigned long BADGE_INVERT_MS = 240;
+const unsigned long BADGE_SNORE_MS = 1000;
 const unsigned long BADGE_FRAME_MS = 80;
 
 const char* asciiFor(uint32_t cp) {
@@ -372,6 +373,7 @@ static int marchOffset() {
 void Surface::badge(int x, uint16_t ink) {
   static const uint8_t OUTLINE[] PROGMEM = {0x7C, 0x92, 0xFE, 0x82, 0x82, 0x82, 0x7C};
   static const uint8_t SOLID[] PROGMEM = {0x7C, 0xEE, 0xFE, 0xFE, 0xFE, 0xFE, 0x7C};
+  static const uint8_t SNORE[] PROGMEM = {0xFE, 0xFE, 0x0C, 0x18, 0x30, 0xFE, 0xFE};
   const int y = 1;
   const unsigned long now = millis();
 
@@ -380,6 +382,8 @@ void Surface::badge(int x, uint16_t ink) {
     if (now / BADGE_BLINK_MS % 2 == 0) g_.drawBitmap(x, y, SOLID, GLYPH_W, GLYPH_W, ink);
   } else if (badge_ == BADGE_IDLE) {
     g_.drawBitmap(x, y, OUTLINE, GLYPH_W, GLYPH_W, ink);
+  } else if (badge_ == BADGE_SLEEPING) {
+    g_.drawBitmap(x, y, now / BADGE_SNORE_MS % 2 ? SNORE : OUTLINE, GLYPH_W, GLYPH_W, ink);
   } else if (badge_ == BADGE_MOVING) {
     // Flips between a mouse on the bar and a mouse cut out of a block.
     const bool inverted = now / BADGE_INVERT_MS % 2;

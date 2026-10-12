@@ -22,6 +22,8 @@ int16_t Engine::randomRange(int16_t lo, int16_t hi) {
 void Engine::apply(const Command& command, uint32_t now) {
   if (command.profile >= PROFILE_STEALTH && command.profile <= PROFILE_AGGRESSIVE) profile_ = command.profile;
 
+  hostAsleep_ = command.host_asleep;
+
   if (command.paused && !paused_) {
     cancel(now);
     pendingTrigger_ = false;
@@ -237,6 +239,7 @@ Status Engine::status(uint32_t now) const {
   s.paused = paused_;
   s.leased = leaseValid(now);
   s.moving = moving_;
+  s.host_asleep = hostAsleep_;
   s.profile = profile_;
   s.last_gesture = lastGesture_;
   const uint32_t idle = now - lastActionAt_;

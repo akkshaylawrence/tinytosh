@@ -212,6 +212,20 @@ void resetZeroesTheOffset() {
   check(r.reports.size() == before, "nothing trails a reset");
 }
 
+void hostAsleepOutlivesTheLease() {
+  Rig r;
+  r.lease(true);
+  check(!r.status().host_asleep, "an awake host is reported awake");
+  r.command.host_asleep = true;
+  r.lease(false);
+  r.run(600000);
+  check(r.status().host_asleep, "a host that said goodnight stays asleep while it is silent");
+  check(r.reports.empty(), "nothing moves while the host sleeps");
+  r.command.host_asleep = false;
+  r.lease(true);
+  check(!r.status().host_asleep, "the first message after waking clears it");
+}
+
 void lostLinkStopsMotion() {
   Rig r;
   r.send();
@@ -284,6 +298,7 @@ int main() {
   triggerNeedsNoLeaseAndFiresOnce();
   newSessionAdoptsCounters();
   resetZeroesTheOffset();
+  hostAsleepOutlivesTheLease();
   lostLinkStopsMotion();
   profilesShapeTheGestures();
   strokesStartAndEndAtRest();

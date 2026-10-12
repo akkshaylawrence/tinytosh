@@ -174,7 +174,7 @@ unsigned long DisplayService::refreshIntervalMs(const AppState& state) const {
     bool animated = screen.animated && screen.animated(state);
     if (animated) return ANIMATED_REFRESH_MS;
     if (badge == Ui::BADGE_MOVING) return BADGE_MOVING_REFRESH_MS;
-    if (badge == Ui::BADGE_SEARCHING) return BADGE_BLINK_REFRESH_MS;
+    if (badge == Ui::BADGE_SEARCHING || badge == Ui::BADGE_SLEEPING) return BADGE_BLINK_REFRESH_MS;
     return STATIC_REFRESH_MS;
 }
 
@@ -186,6 +186,8 @@ bool DisplayService::badgeChanged(const AppState& state) {
     seenGestures = presence.count;
 
     if (presence.link == Presence::LINK_OFF) badge = Ui::BADGE_NONE;
+    // A sleeping computer often drops the Bluetooth link too. That is not a call to pair again.
+    else if (presence.host_asleep) badge = Ui::BADGE_SLEEPING;
     else if (presence.link == Presence::LINK_ADVERTISING) badge = Ui::BADGE_SEARCHING;
     else badge = (long)(movingUntil - millis()) > 0 ? Ui::BADGE_MOVING : Ui::BADGE_IDLE;
     return badge != drawnBadge;

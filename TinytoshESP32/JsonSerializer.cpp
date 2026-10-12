@@ -501,6 +501,7 @@ bool JsonSerializer::parsePresence(JsonVariantConst stats, AppState& state) {
     command.profile = p["profile"] | (int)Presence::PROFILE_BALANCED;
     command.trigger_seq = p["trigger_seq"] | 0;
     command.reset_seq = p["reset_seq"] | 0;
+    command.host_asleep = p["host_asleep"] | false;
     state.presence_command_fresh = true;
     return true;
 }
@@ -512,6 +513,7 @@ String JsonSerializer::buildPresenceJson(const Presence::Status& status) {
     doc["paused"] = status.paused;
     doc["leased"] = status.leased;
     doc["moving"] = status.moving;
+    doc["host_asleep"] = status.host_asleep;
     doc["profile"] = status.profile;
     doc["last_gesture"] = status.last_gesture;
     doc["next_sec"] = status.next_sec;

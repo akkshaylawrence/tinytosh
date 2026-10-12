@@ -33,9 +33,10 @@ struct Style {
 Style styleFrom(const String& chrome, const String& paper);
 
 // The Bluetooth mouse's state, shown at the right of the title bar or menu bar. SEARCHING is a
-// blinking solid mouse (no host connected), IDLE an outlined mouse. MOVING is a solid mouse that
-// runs back and forth while the whole bar marches. SEARCHING and MOVING animate off millis().
-enum Badge : uint8_t { BADGE_NONE, BADGE_SEARCHING, BADGE_IDLE, BADGE_MOVING };
+// blinking solid mouse (no host connected), IDLE an outlined mouse. During MOVING the mouse
+// flashes and the whole bar marches. SLEEPING (the computer is asleep or its display is off)
+// swaps the mouse for a Z once a second. All but IDLE animate off millis().
+enum Badge : uint8_t { BADGE_NONE, BADGE_SEARCHING, BADGE_IDLE, BADGE_MOVING, BADGE_SLEEPING };
 
 // SMALL is the 5 px label face and always prints upper case. The rest are the 5x7 face at 1x to 4x.
 enum Font : uint8_t { FONT_SMALL, FONT_NORMAL, FONT_LARGE, FONT_HUGE, FONT_GIANT };

@@ -54,7 +54,7 @@
 * **👻 Smart Auto-Hide:** PC Monitor and PC Media screens can intelligently hide themselves and skip rotation when your PC is off, disconnected, or no media is playing.
 * **⏱️ Custom Data Sync Intervals:** Override the global refresh rate on a per-screen basis. Set Weather, Air Quality, or Currency to sync more (or less) often than the rest of your dashboard.
 * **🌙 Night Mode & Power Saving:** Set a quiet schedule to minimize sleep distractions. Choose between *Dim Display*, *Turn Display Off*, or *Dim then Turn Off* (featuring an extra time picker for gradual dimming). Features "Smart Latching" (waits for the primary screen before sleeping), 10x slower background API fetching to save power, and a temporary 30-second wake feature via the physical button.
-* **🖱️ Presence (Bluetooth Mouse):** Tinytosh can pair with your computer as a Bluetooth mouse and nudge the pointer with human-looking strokes, scrolls and pauses, so the computer stays active. It only moves while the PC App is running, the display is on, and (on macOS) one of the apps you picked is open. A small mouse at the right of the title bar shows its state: blinking while unpaired, outlined while idle, and during a gesture it flashes while the whole bar marches. Full-screen scenes show it on a corner tab, only while unpaired or moving. Off by default; turn it on under **Hardware Setup**.
+* **🖱️ Presence (Bluetooth Mouse):** Tinytosh can pair with your computer as a Bluetooth mouse and nudge the pointer with human-looking strokes, scrolls and pauses, so the computer stays active. It only moves while the PC App is running, the display is on, and (on macOS) one of the apps you picked is open. A small mouse at the right of the title bar shows its state: blinking while unpaired, outlined while idle, trading places with a Z while the computer sleeps, and during a gesture it flashes while the whole bar marches. Full-screen scenes show it on a corner tab, only while unpaired or moving. Off by default; turn it on under **Hardware Setup**.
 * **🆓 Zero Config APIs:** Uses free public APIs. No API keys required.
 * **🔒 Privacy First:** No accounts, no cloud tracking. Everything runs locally on the ESP32.
 
@@ -213,6 +213,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 | Version | Date | Key Changes |
 | :--- | :--- | :--- |
+| **v1.2.2** | *Oct 2026* | 😴 The **Presence** badge now shows when the computer is asleep or its display is off: the mouse and a **Z** take turns. It replaces the unpaired blink a sleeping computer used to cause by dropping Bluetooth. Needs PC App v1.3.2. |
 | **v1.2.1** | *Oct 2026* | 🖱️ The **Presence** mouse badge now also shows on the **Mac Desktop** clock and the **Screensaver**, on a small tab in the top right corner. It appears there only while the mouse is unpaired or making a gesture. |
 | **v1.2.0** | *Oct 2026* | 🖱️ Added **Presence**: Tinytosh pairs as a **Bluetooth mouse** and keeps the computer active with human-looking pointer gestures, controlled from the PC App (v1.3.0). A mouse badge in the title bar or menu bar shows when it is unpaired, idle or moving. Off by default. |
 | **v1.1.9** | *Oct 2026* | 📏 The **Air Quality** screen's readings sit a little further from the divider in the layout without a header. |

@@ -35,6 +35,7 @@ struct Command {
   uint8_t profile = PROFILE_BALANCED;
   uint16_t trigger_seq = 0;  // a new value within one session asks for one gesture now
   uint16_t reset_seq = 0;    // a new value within one session moves the origin here
+  bool host_asleep = false;  // the host is going to sleep or its display is off
 };
 
 enum Link : uint8_t { LINK_OFF, LINK_ADVERTISING, LINK_CONNECTED };
@@ -44,6 +45,9 @@ struct Status {
   bool paused = false;
   bool leased = false;
   bool moving = false;
+  // The host's last word before it went quiet. A sleeping host sends nothing, so this stays
+  // set until it wakes and says otherwise.
+  bool host_asleep = false;
   uint8_t profile = PROFILE_BALANCED;
   uint8_t last_gesture = GESTURE_NONE;
   uint8_t next_sec = 0;
@@ -82,6 +86,7 @@ private:
   Port& port_;
 
   bool paused_ = false;
+  bool hostAsleep_ = false;
   uint8_t profile_ = PROFILE_BALANCED;
   bool leased_ = false;
   uint32_t leaseAt_ = 0;

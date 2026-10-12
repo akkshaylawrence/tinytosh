@@ -50,6 +50,8 @@ pub(crate) struct Command {
     profile: u8,
     trigger_seq: u16,
     reset_seq: u16,
+    /// Shown on the device, and kept there while this app is too asleep to say anything else.
+    host_asleep: bool,
 }
 
 /// What the device reports back.
@@ -79,6 +81,10 @@ impl LeaseTerms {
     fn granted(&self) -> bool {
         self.enabled && self.awake && self.display && self.watch_open
     }
+
+    fn host_asleep(&self) -> bool {
+        !self.awake || !self.display
+    }
 }
 
 #[derive(Serialize)]
@@ -106,7 +112,7 @@ pub(crate) struct Presence {
     reset_seq: u16,
     sleep_started: Option<Instant>,
     quitting: bool,
-    last_sent_lease: Option<bool>,
+    last_sent: Option<Command>,
     device: Option<(DeviceStatus, Instant)>,
 }
 
@@ -121,7 +127,7 @@ impl Default for Presence {
             reset_seq: 0,
             sleep_started: None,
             quitting: false,
-            last_sent_lease: None,
+            last_sent: None,
             device: None,
         }
     }
@@ -221,23 +227,25 @@ impl Presence {
     /// The command for this tick's stats push.
     pub(crate) fn command(&self, over_wifi: bool) -> Command {
         let running = if self.saved.watch.is_empty() { BTreeMap::new() } else { platform::running_apps() };
+        let terms = self.terms(&running);
         Command {
             session: self.session,
-            lease: self.terms(&running).granted(),
+            lease: terms.granted(),
             lease_ms: if over_wifi { WIFI_LEASE_MS } else { SERIAL_LEASE_MS },
             paused: !self.saved.enabled,
             profile: self.saved.profile,
             trigger_seq: self.trigger_seq,
             reset_seq: self.reset_seq,
+            host_asleep: terms.host_asleep(),
         }
     }
 
     pub(crate) fn sent(&mut self, command: &Command) {
-        self.last_sent_lease = Some(command.lease);
+        self.last_sent = Some(command.clone());
     }
 
     pub(crate) fn link_lost(&mut self) {
-        self.last_sent_lease = None;
+        self.last_sent = None;
         self.device = None;
     }
 
@@ -270,25 +278,24 @@ impl Presence {
     }
 }
 
-/// Stops renewing and waits for the main loop to say so to the device. Used where the process
-/// is about to stop running: system sleep and quit.
-fn revoke_and_wait(app: &tauri::AppHandle, mark: impl FnOnce(&mut Presence)) {
+/// Changes what the next command says and waits for the main loop to say it to the device.
+/// Used where the process is about to stop running: system sleep and quit. Nothing to wait
+/// for when no device is connected.
+fn tell_and_wait(app: &tauri::AppHandle, mark: impl FnOnce(&mut Presence), told: fn(&Command) -> bool) {
     let state = app.state::<AppState>();
-    {
-        let mut presence = state.presence.lock().unwrap();
-        mark(&mut presence);
-        if presence.last_sent_lease != Some(true) {
-            return;
-        }
-    }
+    mark(&mut state.presence.lock().unwrap());
     let deadline = Instant::now() + REVOKE_WAIT;
-    while Instant::now() < deadline && state.presence.lock().unwrap().last_sent_lease == Some(true) {
+    while Instant::now() < deadline {
+        match &state.presence.lock().unwrap().last_sent {
+            Some(sent) if !told(sent) => {}
+            _ => return,
+        }
         thread::sleep(Duration::from_millis(20));
     }
 }
 
 pub(crate) fn will_sleep(app: &tauri::AppHandle) {
-    revoke_and_wait(app, |presence| presence.sleep_started = Some(Instant::now()));
+    tell_and_wait(app, |presence| presence.sleep_started = Some(Instant::now()), |sent| sent.host_asleep);
 }
 
 pub(crate) fn did_wake(app: &tauri::AppHandle) {
@@ -296,7 +303,7 @@ pub(crate) fn did_wake(app: &tauri::AppHandle) {
 }
 
 pub(crate) fn will_quit(app: &tauri::AppHandle) {
-    revoke_and_wait(app, |presence| presence.quitting = true);
+    tell_and_wait(app, |presence| presence.quitting = true, |sent| !sent.lease);
 }
 
 pub(crate) fn start(app: &tauri::AppHandle) {
@@ -468,6 +475,14 @@ mod tests {
         assert!(!LeaseTerms { awake: false, ..OPEN }.granted());
         assert!(!LeaseTerms { display: false, ..OPEN }.granted());
         assert!(!LeaseTerms { watch_open: false, ..OPEN }.granted());
+    }
+
+    #[test]
+    fn host_is_asleep_when_the_system_or_the_display_is() {
+        assert!(!OPEN.host_asleep());
+        assert!(LeaseTerms { awake: false, ..OPEN }.host_asleep());
+        assert!(LeaseTerms { display: false, ..OPEN }.host_asleep());
+        assert!(!LeaseTerms { enabled: false, watch_open: false, ..OPEN }.host_asleep());
     }
 
     #[test]
