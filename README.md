@@ -209,6 +209,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 | Version | Date | Key Changes |
 | :--- | :--- | :--- |
+| **v1.1.9** | *Oct 2026* | 📏 The **Air Quality** screen's readings sit a little further from the divider in the layout without a header. |
 | **v1.1.8** | *Oct 2026* | 🍎 Every screen now has the **classic Mac look**: a System 1 window with a striped title bar, Mac progress bars, and alert boxes. Choose **Window** or **Menu Bar** framing and **Black** or **White** paper in the Web Panel or PC App. 🙂 Startup is now a Mac boot sequence with a happy Mac and a progress bar, and a sad Mac if WiFi fails. |
 | **v1.1.7** | *Oct 2026* | 🖥️ Added the **Screensaver** screen with four animated scenes: MacPaint, Spinning Mac, Life, and a live Weather scene. Choose the scenes in the Web Panel or PC App. 🕰️ Added a **Mac Desktop** clock style for the Time screen. Animated screens redraw at 25 fps; every other screen is unchanged. Saved settings carry over and gain the new screen at the end of the order. |
 | **v1.1.6** | *Oct 2026* | 🧹 Removed the **Stock Tracker** and **Crypto Tracker** screens and **Public Holidays** on the Calendar screen, along with their settings in the Web Panel and PC App (12 screens remain). Saved screen order is migrated automatically on update. 🌤️ Weather now uses the ECMWF IFS forecast model. Requires PC App v1.2.6. |

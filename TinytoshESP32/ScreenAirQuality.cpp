@@ -6,6 +6,7 @@
 namespace {
 
 const int SIDE_W = 40;
+const int GRID_X = SIDE_W + 8;
 
 struct Pollutant {
   const char* key;
@@ -91,5 +92,5 @@ void Screens::drawAirQuality(Ui::Surface& ui, const AppState& state, int) {
   c.textCentered(aqi, SIDE_W / 2, 26, font);
   c.textFitCentered(status, SIDE_W / 2, 43, SIDE_W, Ui::FONT_SMALL);
   c.vline(SIDE_W + 2, 0, c.h);
-  c.statGrid(stats, count, SIDE_W + 5, c.w - SIDE_W - 5);
+  c.statGrid(stats, count, GRID_X, c.w - GRID_X);
 }
