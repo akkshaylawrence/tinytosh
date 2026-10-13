@@ -3,127 +3,188 @@
 #include "PopulationService.h"
 #include "TimeService.h"
 
+namespace {
+
+// One row per setting that is a single value: where it sits in the JSON and which Config member
+// holds it. Writing and reading both walk this table, so a new setting is one new row. Settings
+// that are lists (screen order, extra values, currency pairs) are handled by hand below.
+struct ConfigField {
+    enum Kind { INT, FLAG, TEXT, REAL, ULONG, U16 };
+
+    const char* group;
+    const char* key;
+    Kind kind;
+    union {
+        int Config::* asInt;
+        bool Config::* asFlag;
+        String Config::* asText;
+        float Config::* asReal;
+        unsigned long Config::* asUlong;
+        uint16_t Config::* asU16;
+    };
+
+    constexpr ConfigField(const char* g, const char* k, int Config::* m) : group(g), key(k), kind(INT), asInt(m) {}
+    constexpr ConfigField(const char* g, const char* k, bool Config::* m) : group(g), key(k), kind(FLAG), asFlag(m) {}
+    constexpr ConfigField(const char* g, const char* k, String Config::* m) : group(g), key(k), kind(TEXT), asText(m) {}
+    constexpr ConfigField(const char* g, const char* k, float Config::* m) : group(g), key(k), kind(REAL), asReal(m) {}
+    constexpr ConfigField(const char* g, const char* k, unsigned long Config::* m) : group(g), key(k), kind(ULONG), asUlong(m) {}
+    constexpr ConfigField(const char* g, const char* k, uint16_t Config::* m) : group(g), key(k), kind(U16), asU16(m) {}
+};
+
+const ConfigField CONFIG_FIELDS[] = {
+    {"hardware", "sda_pin", &Config::sda_pin},
+    {"hardware", "scl_pin", &Config::scl_pin},
+    {"hardware", "button_pin", &Config::button_pin},
+    {"hardware", "button_type", &Config::button_type},
+    {"hardware", "presence_ble", &Config::presence_ble},
+
+    {"general", "refresh_min", &Config::refresh_interval_min},
+    {"general", "time_format", &Config::time_format},
+    {"general", "auto_detect", &Config::auto_detect},
+    {"general", "latitude", &Config::latitude},
+    {"general", "longitude", &Config::longitude},
+    {"general", "country", &Config::country},
+    {"general", "country_code", &Config::country_code},
+    {"general", "city", &Config::city},
+    {"general", "timezone", &Config::timezone},
+    {"general", "ntp_server", &Config::ntp_server},
+    {"general", "date_display", &Config::date_display},
+    {"general", "time_style", &Config::time_style},
+    {"general", "ui_chrome", &Config::ui_chrome},
+    {"general", "ui_paper", &Config::ui_paper},
+
+    {"theme", "bg", &Config::theme_bg},
+    {"theme", "card", &Config::theme_card},
+    {"theme", "accent", &Config::theme_accent},
+    {"theme", "text", &Config::theme_text},
+
+    {"night", "mode", &Config::night_mode},
+    {"night", "start", &Config::night_start},
+    {"night", "end", &Config::night_end},
+    {"night", "action", &Config::night_action},
+    {"night", "dim_start", &Config::night_dim_start},
+
+    {"screens", "auto_cycle", &Config::screen_auto_cycle},
+    {"screens", "interval_sec", &Config::screen_interval_sec},
+    {"screens", "anim_mask", &Config::anim_mask},
+    {"screens", "saver_mask", &Config::saver_mask},
+    {"screens", "show_time", &Config::show_time},
+    {"screens", "show_calendar", &Config::show_calendar},
+    {"screens", "show_weather", &Config::show_weather},
+    {"screens", "show_aqi", &Config::show_aqi},
+    {"screens", "show_daylight", &Config::show_daylight},
+    {"screens", "show_moon", &Config::show_moon},
+    {"screens", "show_population", &Config::show_population},
+    {"screens", "show_pc", &Config::show_pc},
+    {"screens", "show_media", &Config::show_media},
+    {"screens", "show_currency", &Config::show_currency},
+    {"screens", "show_bambu", &Config::show_bambu},
+    {"screens", "show_flight", &Config::show_flight},
+    {"screens", "show_saver", &Config::show_saver},
+    {"screens", "hide_empty_pc", &Config::hide_empty_pc},
+    {"screens", "hide_empty_media", &Config::hide_empty_media},
+    {"screens", "hide_empty_bambu", &Config::hide_empty_bambu},
+    {"screens", "hide_empty_flight", &Config::hide_empty_flight},
+
+    {"calendar", "start_day", &Config::calendar_start_day},
+    {"calendar", "minimal", &Config::calendar_minimal},
+
+    {"weather", "temp_unit", &Config::temp_unit},
+    {"weather", "round_temps", &Config::round_temps},
+    {"weather", "show_header", &Config::weather_show_header},
+    {"weather", "custom_sync_min", &Config::custom_weather_int_min},
+
+    {"aqi", "type", &Config::aqi_type},
+    {"aqi", "show_header", &Config::aqi_show_header},
+    {"aqi", "custom_sync_min", &Config::custom_aqi_int_min},
+
+    {"daylight", "minimal", &Config::daylight_minimal},
+    {"moon", "minimal", &Config::moon_minimal},
+
+    {"population", "show_world", &Config::pop_show_world},
+    {"population", "show_country", &Config::pop_show_country},
+
+    {"currency", "fn", &Config::currency_fn},
+    {"currency", "custom_sync_min", &Config::custom_currency_int_min},
+
+    {"printer", "ip", &Config::bambu_ip},
+    {"printer", "sn", &Config::bambu_sn},
+    {"printer", "code", &Config::bambu_code},
+
+    {"flight", "mode", &Config::flight_mode},
+    {"flight", "radius_nm", &Config::flight_radius_nm},
+    {"flight", "units", &Config::flight_units},
+    {"flight", "primary_info", &Config::flight_primary_info},
+    {"flight", "secondary_info", &Config::flight_secondary_info},
+    {"flight", "custom_sync_min", &Config::custom_flight_int_min},
+};
+
+void writeField(const ConfigField& field, const Config& config, JsonObject group) {
+    switch (field.kind) {
+        case ConfigField::INT: group[field.key] = config.*field.asInt; break;
+        case ConfigField::FLAG: group[field.key] = config.*field.asFlag ? 1 : 0; break;
+        case ConfigField::TEXT: group[field.key] = config.*field.asText; break;
+        case ConfigField::REAL: group[field.key] = config.*field.asReal; break;
+        case ConfigField::ULONG: group[field.key] = config.*field.asUlong; break;
+        case ConfigField::U16: group[field.key] = config.*field.asU16; break;
+    }
+}
+
+void readField(const ConfigField& field, Config& config, JsonVariantConst value) {
+    switch (field.kind) {
+        case ConfigField::INT: config.*field.asInt = value; break;
+        case ConfigField::FLAG: config.*field.asFlag = value == 1; break;
+        case ConfigField::TEXT: config.*field.asText = value.as<String>(); break;
+        case ConfigField::REAL: config.*field.asReal = value.as<float>(); break;
+        case ConfigField::ULONG: config.*field.asUlong = value; break;
+        case ConfigField::U16: config.*field.asU16 = value; break;
+    }
+}
+
+template <size_t N>
+void writeValues(JsonObject group, const String (&values)[N]) {
+    JsonArray array = group.createNestedArray("values");
+    for (const String& value : values) if (value.length() > 0) array.add(value);
+}
+
+template <size_t N>
+void readValues(JsonObjectConst group, String (&values)[N]) {
+    if (!group.containsKey("values")) return;
+    for (String& value : values) value = "";
+    size_t i = 0;
+    for (JsonVariantConst v : group["values"].as<JsonArrayConst>()) if (i < N) values[i++] = v.as<String>();
+}
+
+}  // namespace
+
 void JsonSerializer::populateConfigDoc(const Config& config, JsonObject configObj) {
     JsonObject network = configObj.createNestedObject("network");
     network["device_id"] = config.device_id;
     network["ip_address"] = config.ip_address;
 
-    JsonObject hardware = configObj.createNestedObject("hardware");
-    hardware["sda_pin"] = config.sda_pin;
-    hardware["scl_pin"] = config.scl_pin;
-    hardware["button_pin"] = config.button_pin;
-    hardware["button_type"] = config.button_type;
-    hardware["presence_ble"] = config.presence_ble ? 1 : 0;
+    for (const ConfigField& field : CONFIG_FIELDS) {
+        JsonObject group = configObj[field.group];
+        if (group.isNull()) group = configObj.createNestedObject(field.group);
+        writeField(field, config, group);
+    }
 
-    JsonObject general = configObj.createNestedObject("general");
-    general["refresh_min"] = config.refresh_interval_min;
-    general["time_format"] = config.time_format;
-    general["auto_detect"] = config.auto_detect ? 1 : 0;
-    general["latitude"] = config.latitude;
-    general["longitude"] = config.longitude;
-    general["country"] = config.country;
-    general["country_code"] = config.country_code;
-    general["city"] = config.city;
-    general["timezone"] = config.timezone;
-    general["ntp_server"] = config.ntp_server;
-    general["date_display"] = config.date_display ? 1 : 0;
-    general["time_style"] = config.time_style;
-    general["ui_chrome"] = config.ui_chrome;
-    general["ui_paper"] = config.ui_paper;
-
-    JsonObject theme = configObj.createNestedObject("theme");
-    theme["bg"] = config.theme_bg;
-    theme["card"] = config.theme_card;
-    theme["accent"] = config.theme_accent;
-    theme["text"] = config.theme_text;
-
-    JsonObject night = configObj.createNestedObject("night");
-    night["mode"] = config.night_mode ? 1 : 0;
-    night["start"] = config.night_start;
-    night["end"] = config.night_end;
-    night["action"] = config.night_action;
-    night["dim_start"] = config.night_dim_start;
-
-    JsonObject screens = configObj.createNestedObject("screens");
-    screens["auto_cycle"] = config.screen_auto_cycle ? 1 : 0;
-    screens["interval_sec"] = config.screen_interval_sec;
-    screens["anim_mask"] = config.anim_mask;
-    screens["saver_mask"] = config.saver_mask;
-    screens["show_time"] = config.show_time ? 1 : 0;
-    screens["show_calendar"] = config.show_calendar ? 1 : 0;
-    screens["show_weather"] = config.show_weather ? 1 : 0;
-    screens["show_aqi"] = config.show_aqi ? 1 : 0;
-    screens["show_daylight"] = config.show_daylight ? 1 : 0;
-    screens["show_moon"] = config.show_moon ? 1 : 0;
-    screens["show_population"] = config.show_population ? 1 : 0;
-    screens["show_pc"] = config.show_pc ? 1 : 0;
-    screens["show_media"] = config.show_media ? 1 : 0;
-    screens["show_currency"] = config.show_currency ? 1 : 0;
-    screens["show_bambu"] = config.show_bambu ? 1 : 0;
-    screens["show_flight"] = config.show_flight ? 1 : 0;
-    screens["show_saver"] = config.show_saver ? 1 : 0;
-    screens["hide_empty_pc"] = config.hide_empty_pc ? 1 : 0;
-    screens["hide_empty_media"] = config.hide_empty_media ? 1 : 0;
-    screens["hide_empty_bambu"] = config.hide_empty_bambu ? 1 : 0;
-    screens["hide_empty_flight"] = config.hide_empty_flight ? 1 : 0;
     String orderStr = "";
     for (int i = 0; i < NUM_SCREENS; i++) {
         orderStr += String(config.screen_order[i]);
         if (i < NUM_SCREENS - 1) orderStr += ",";
     }
-    screens["order"] = orderStr;
+    configObj["screens"]["order"] = orderStr;
 
-    JsonObject calendar = configObj.createNestedObject("calendar");
-    calendar["start_day"] = config.calendar_start_day;
-    calendar["minimal"] = config.calendar_minimal ? 1 : 0;
+    writeValues(configObj["weather"], config.weather_values);
+    writeValues(configObj["aqi"], config.aqi_values);
 
-    JsonObject weather = configObj.createNestedObject("weather");
-    weather["temp_unit"] = config.temp_unit;
-    weather["round_temps"] = config.round_temps ? 1 : 0;
-    weather["show_header"] = config.weather_show_header ? 1 : 0;
-    weather["custom_sync_min"] = config.custom_weather_int_min;
-    JsonArray wvArr = weather.createNestedArray("values");
-    for (int i = 0; i < 6; i++) if (config.weather_values[i].length() > 0) wvArr.add(config.weather_values[i]);
-
-    JsonObject aqi = configObj.createNestedObject("aqi");
-    aqi["type"] = config.aqi_type;
-    aqi["show_header"] = config.aqi_show_header ? 1 : 0;
-    aqi["custom_sync_min"] = config.custom_aqi_int_min;
-    JsonArray avArr = aqi.createNestedArray("values");
-    for (int i = 0; i < 6; i++) if (config.aqi_values[i].length() > 0) avArr.add(config.aqi_values[i]);
-
-    JsonObject daylight = configObj.createNestedObject("daylight");
-    daylight["minimal"] = config.daylight_minimal ? 1 : 0;
-
-    JsonObject moon = configObj.createNestedObject("moon");
-    moon["minimal"] = config.moon_minimal ? 1 : 0;
-
-    JsonObject population = configObj.createNestedObject("population");
-    population["show_world"] = config.pop_show_world ? 1 : 0;
-    population["show_country"] = config.pop_show_country ? 1 : 0;
-
-    JsonObject currency = configObj.createNestedObject("currency");
-    currency["fn"] = config.currency_fn ? 1 : 0;
-    currency["custom_sync_min"] = config.custom_currency_int_min;
+    JsonObject currency = configObj["currency"];
     JsonArray cbArr = currency.createNestedArray("bases");
     for (int i = 0; i < config.currency_count; i++) cbArr.add(config.currency_bases[i]);
     JsonArray ctArr = currency.createNestedArray("targets");
     for (int i = 0; i < config.currency_count; i++) ctArr.add(config.currency_targets[i]);
     JsonArray cmArr = currency.createNestedArray("multipliers");
     for (int i = 0; i < config.currency_count; i++) cmArr.add(config.currency_multipliers[i]);
-
-    JsonObject printer = configObj.createNestedObject("printer");
-    printer["ip"] = config.bambu_ip;
-    printer["sn"] = config.bambu_sn;
-    printer["code"] = config.bambu_code;
-
-    JsonObject flight = configObj.createNestedObject("flight");
-    flight["mode"] = config.flight_mode;
-    flight["radius_nm"] = config.flight_radius_nm;
-    flight["units"] = config.flight_units;
-    flight["primary_info"] = config.flight_primary_info;
-    flight["secondary_info"] = config.flight_secondary_info;
-    flight["custom_sync_min"] = config.custom_flight_int_min;
 }
 
 String JsonSerializer::buildConfigJson(const Config& config) {
@@ -284,190 +345,63 @@ bool JsonSerializer::parseConfig(const char* jsonString, AppState& state) {
 
     Config& config = state.config;
 
-    if (doc.containsKey("hardware")) {
-        JsonObject g = doc["hardware"];
-        if (g.containsKey("sda_pin")) config.sda_pin = g["sda_pin"];
-        if (g.containsKey("scl_pin")) config.scl_pin = g["scl_pin"];
-        if (g.containsKey("button_pin")) config.button_pin = g["button_pin"];
-        if (g.containsKey("button_type")) config.button_type = g["button_type"].as<String>();
-        if (g.containsKey("presence_ble")) config.presence_ble = g["presence_ble"] == 1;
+    for (const ConfigField& field : CONFIG_FIELDS) {
+        JsonObjectConst group = doc[field.group];
+        if (group.containsKey(field.key)) readField(field, config, group[field.key]);
     }
 
-    if (doc.containsKey("general")) {
-        JsonObject g = doc["general"];
-        if (g.containsKey("refresh_min")) config.refresh_interval_min = g["refresh_min"];
-        if (g.containsKey("time_format")) config.time_format = g["time_format"].as<String>();
-        if (g.containsKey("auto_detect")) config.auto_detect = g["auto_detect"] == 1;
-        if (g.containsKey("latitude")) config.latitude = g["latitude"].as<float>();
-        if (g.containsKey("longitude")) config.longitude = g["longitude"].as<float>();
-        if (g.containsKey("country")) config.country = g["country"].as<String>();
-        if (g.containsKey("city")) config.city = g["city"].as<String>();
-        if (g.containsKey("timezone")) config.timezone = g["timezone"].as<String>();
-        if (g.containsKey("ntp_server")) { config.ntp_server = g["ntp_server"].as<String>(); config.ntp_server.trim(); }
-        if (g.containsKey("date_display")) config.date_display = g["date_display"] == 1;
-        if (g.containsKey("time_style")) config.time_style = g["time_style"];
-        if (g.containsKey("ui_chrome")) config.ui_chrome = g["ui_chrome"].as<String>();
-        if (g.containsKey("ui_paper")) config.ui_paper = g["ui_paper"].as<String>();
-        if (g.containsKey("country_code")) {
-            config.country_code = g["country_code"].as<String>();
-            for (auto c : allCountries) {
-                if (config.country_code == String(c.code)) {
-                    config.country = c.name;
-                    break;
-                }
+    config.ntp_server.trim();
+    if (doc["general"].containsKey("country_code")) {
+        for (auto c : allCountries) {
+            if (config.country_code == String(c.code)) {
+                config.country = c.name;
+                break;
             }
         }
     }
 
-    if (doc.containsKey("theme")) {
-        JsonObject g = doc["theme"];
-        if (g.containsKey("bg")) config.theme_bg = g["bg"].as<String>();
-        if (g.containsKey("card")) config.theme_card = g["card"].as<String>();
-        if (g.containsKey("accent")) config.theme_accent = g["accent"].as<String>();
-        if (g.containsKey("text")) config.theme_text = g["text"].as<String>();
-    }
-
-    if (doc.containsKey("night")) {
-        JsonObject g = doc["night"];
-        if (g.containsKey("mode")) config.night_mode = g["mode"] == 1;
-        if (g.containsKey("start")) config.night_start = g["start"].as<String>();
-        if (g.containsKey("end")) config.night_end = g["end"].as<String>();
-        if (g.containsKey("dim_start")) config.night_dim_start = g["dim_start"].as<String>();
-        if (g.containsKey("action")) config.night_action = g["action"];
-    }
-
-    if (doc.containsKey("screens")) {
-        JsonObject g = doc["screens"];
-        if (g.containsKey("auto_cycle")) config.screen_auto_cycle = g["auto_cycle"] == 1;
-        if (g.containsKey("interval_sec")) config.screen_interval_sec = g["interval_sec"];
-        if (g.containsKey("anim_mask")) config.anim_mask = g["anim_mask"];
-        if (g.containsKey("saver_mask")) config.saver_mask = g["saver_mask"];
-        if (g.containsKey("show_time")) config.show_time = g["show_time"] == 1;
-        if (g.containsKey("show_calendar")) config.show_calendar = g["show_calendar"] == 1;
-        if (g.containsKey("show_weather")) config.show_weather = g["show_weather"] == 1;
-        if (g.containsKey("show_aqi")) config.show_aqi = g["show_aqi"] == 1;
-        if (g.containsKey("show_daylight")) config.show_daylight = g["show_daylight"] == 1;
-        if (g.containsKey("show_moon")) config.show_moon = g["show_moon"] == 1;
-        if (g.containsKey("show_population")) config.show_population = g["show_population"] == 1;
-        if (g.containsKey("show_pc")) config.show_pc = g["show_pc"] == 1;
-        if (g.containsKey("show_media")) config.show_media = g["show_media"] == 1;
-        if (g.containsKey("show_currency")) config.show_currency = g["show_currency"] == 1;
-        if (g.containsKey("show_bambu")) config.show_bambu = g["show_bambu"] == 1;
-        if (g.containsKey("show_flight")) config.show_flight = g["show_flight"] == 1;
-        if (g.containsKey("show_saver")) config.show_saver = g["show_saver"] == 1;
-        if (g.containsKey("hide_empty_pc")) config.hide_empty_pc = g["hide_empty_pc"] == 1;
-        if (g.containsKey("hide_empty_media")) config.hide_empty_media = g["hide_empty_media"] == 1;
-        if (g.containsKey("hide_empty_bambu")) config.hide_empty_bambu = g["hide_empty_bambu"] == 1;
-        if (g.containsKey("hide_empty_flight")) config.hide_empty_flight = g["hide_empty_flight"] == 1;
-        if (g.containsKey("order")) {
-            String orderStr = g["order"].as<String>();
-            // Configs saved by older firmware (marked by show_stock) hold 14 ids with Stock=8 and Crypto=9; drop them and shift the rest down.
-            bool legacy = g.containsKey("show_stock");
-            int idx = 0; int startPos = 0;
-            while (startPos < orderStr.length() && (legacy || idx < NUM_SCREENS)) {
-                int commaPos = orderStr.indexOf(',', startPos);
-                int id = (commaPos == -1 ? orderStr.substring(startPos) : orderStr.substring(startPos, commaPos)).toInt();
-                if (!legacy || (id != 8 && id != 9)) {
-                    if (legacy && id > 9) id -= 2;
-                    if (idx < NUM_SCREENS) config.screen_order[idx++] = id;
-                }
-                if (commaPos == -1) break;
-                startPos = commaPos + 1;
+    JsonObjectConst screens = doc["screens"];
+    if (screens.containsKey("order")) {
+        String orderStr = screens["order"].as<String>();
+        // Configs saved by older firmware (marked by show_stock) hold 14 ids with Stock=8 and Crypto=9; drop them and shift the rest down.
+        bool legacy = screens.containsKey("show_stock");
+        int idx = 0; int startPos = 0;
+        while (startPos < orderStr.length() && (legacy || idx < NUM_SCREENS)) {
+            int commaPos = orderStr.indexOf(',', startPos);
+            int id = (commaPos == -1 ? orderStr.substring(startPos) : orderStr.substring(startPos, commaPos)).toInt();
+            if (!legacy || (id != 8 && id != 9)) {
+                if (legacy && id > 9) id -= 2;
+                if (idx < NUM_SCREENS) config.screen_order[idx++] = id;
             }
-            // An order saved before a screen existed lacks its id; append it so the screen appears after an upgrade.
-            for (int id = 0; id < NUM_SCREENS && idx < NUM_SCREENS; id++) {
-                bool present = false;
-                for (int j = 0; j < idx; j++) if (config.screen_order[j] == id) present = true;
-                if (!present) config.screen_order[idx++] = id;
+            if (commaPos == -1) break;
+            startPos = commaPos + 1;
+        }
+        // An order saved before a screen existed lacks its id; append it so the screen appears after an upgrade.
+        for (int id = 0; id < NUM_SCREENS && idx < NUM_SCREENS; id++) {
+            bool present = false;
+            for (int j = 0; j < idx; j++) if (config.screen_order[j] == id) present = true;
+            if (!present) config.screen_order[idx++] = id;
+        }
+    }
+
+    readValues(doc["weather"], config.weather_values);
+    readValues(doc["aqi"], config.aqi_values);
+
+    JsonObjectConst currency = doc["currency"];
+    if (currency.containsKey("bases")) {
+        JsonArrayConst arrB = currency["bases"];
+        JsonArrayConst arrT = currency["targets"];
+        JsonArrayConst arrM = currency["multipliers"];
+        config.currency_count = 0;
+        for (int i = 0; i < arrB.size(); i++) {
+            if (config.currency_count < MAX_MULTI_ENTRIES) {
+                config.currency_bases[config.currency_count] = arrB[i].as<String>();
+                config.currency_targets[config.currency_count] = arrT[i].as<String>();
+                config.currency_multipliers[config.currency_count] = arrM[i].as<int>();
+                config.currency_count++;
             }
         }
-    }
-
-    if (doc.containsKey("calendar")) {
-        JsonObject g = doc["calendar"];
-        if (g.containsKey("start_day")) config.calendar_start_day = g["start_day"].as<String>();
-        if (g.containsKey("minimal")) config.calendar_minimal = g["minimal"] == 1;
-    }
-
-    if (doc.containsKey("weather")) {
-        JsonObject g = doc["weather"];
-        if (g.containsKey("temp_unit")) config.temp_unit = g["temp_unit"].as<String>();
-        if (g.containsKey("round_temps")) config.round_temps = g["round_temps"] == 1;
-        if (g.containsKey("show_header")) config.weather_show_header = g["show_header"] == 1;
-        if (g.containsKey("custom_sync_min")) config.custom_weather_int_min = g["custom_sync_min"];
-        if (g.containsKey("values")) {
-            JsonArray arr = g["values"].as<JsonArray>();
-            for (int i = 0; i < 6; i++) config.weather_values[i] = "";
-            int i = 0;
-            for (JsonVariant v : arr) if (i < 6) config.weather_values[i++] = v.as<String>();
-        }
-    }
-
-    if (doc.containsKey("aqi")) {
-        JsonObject g = doc["aqi"];
-        if (g.containsKey("type")) config.aqi_type = g["type"].as<String>();
-        if (g.containsKey("show_header")) config.aqi_show_header = g["show_header"] == 1;
-        if (g.containsKey("custom_sync_min")) config.custom_aqi_int_min = g["custom_sync_min"];
-        if (g.containsKey("values")) {
-            JsonArray arr = g["values"].as<JsonArray>();
-            for (int i = 0; i < 6; i++) config.aqi_values[i] = "";
-            int i = 0;
-            for (JsonVariant v : arr) if (i < 6) config.aqi_values[i++] = v.as<String>();
-        }
-    }
-
-    if (doc.containsKey("daylight")) {
-        JsonObject g = doc["daylight"];
-        if (g.containsKey("minimal")) config.daylight_minimal = g["minimal"] == 1;
-    }
-
-    if (doc.containsKey("moon")) {
-        JsonObject g = doc["moon"];
-        if (g.containsKey("minimal")) config.moon_minimal = g["minimal"] == 1;
-    }
-
-    if (doc.containsKey("population")) {
-        JsonObject g = doc["population"];
-        if (g.containsKey("show_world")) config.pop_show_world = g["show_world"] == 1;
-        if (g.containsKey("show_country")) config.pop_show_country = g["show_country"] == 1;
-    }
-
-    if (doc.containsKey("currency")) {
-        JsonObject g = doc["currency"];
-        if (g.containsKey("fn")) config.currency_fn = g["fn"] == 1;
-        if (g.containsKey("custom_sync_min")) config.custom_currency_int_min = g["custom_sync_min"];
-        if (g.containsKey("bases")) {
-            JsonArray arrB = g["bases"].as<JsonArray>();
-            JsonArray arrT = g["targets"].as<JsonArray>();
-            JsonArray arrM = g["multipliers"].as<JsonArray>();
-            config.currency_count = 0;
-            for (int i = 0; i < arrB.size(); i++) {
-                if (config.currency_count < MAX_MULTI_ENTRIES) {
-                    config.currency_bases[config.currency_count] = arrB[i].as<String>();
-                    config.currency_targets[config.currency_count] = arrT[i].as<String>();
-                    config.currency_multipliers[config.currency_count] = arrM[i].as<int>();
-                    config.currency_count++;
-                }
-            }
-            if (config.currency_count == 0) { config.currency_bases[0] = "usd"; config.currency_targets[0] = "eur"; config.currency_multipliers[0] = 1; config.currency_count = 1; }
-        }
-    }
-
-    if (doc.containsKey("printer")) {
-        JsonObject g = doc["printer"];
-        if (g.containsKey("ip")) config.bambu_ip = g["ip"].as<String>();
-        if (g.containsKey("sn")) config.bambu_sn = g["sn"].as<String>();
-        if (g.containsKey("code")) config.bambu_code = g["code"].as<String>();
-    }
-
-    if (doc.containsKey("flight")) {
-        JsonObject g = doc["flight"];
-        if (g.containsKey("mode")) config.flight_mode = g["mode"].as<String>();
-        if (g.containsKey("radius_nm")) config.flight_radius_nm = g["radius_nm"];
-        if (g.containsKey("units")) config.flight_units = g["units"].as<String>();
-        if (g.containsKey("primary_info")) config.flight_primary_info = g["primary_info"].as<String>();
-        if (g.containsKey("secondary_info")) config.flight_secondary_info = g["secondary_info"].as<String>();
-        if (g.containsKey("custom_sync_min")) config.custom_flight_int_min = g["custom_sync_min"];
+        if (config.currency_count == 0) { config.currency_bases[0] = "usd"; config.currency_targets[0] = "eur"; config.currency_multipliers[0] = 1; config.currency_count = 1; }
     }
 
     // Dynamic State Wipes (Triggers data reload)
