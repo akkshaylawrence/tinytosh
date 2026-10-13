@@ -11,7 +11,7 @@ trap 'rm -f "$ALL"' EXIT
 cat *.h *.cpp *.ino > "$ALL"
 HEADERS=$(ls *.h | grep -v images.h)
 # Overrides the BLE and port base classes call, and words the function pattern picks up from data.
-IGNORE='^(onConnect|onDisconnect|Congo|layout)$'
+IGNORE='^(onConnect|onDisconnect|Congo)$'
 
 uses() { grep -ow "$1" "$ALL" | wc -l | tr -d ' '; }
 report() {
@@ -21,7 +21,7 @@ report() {
 }
 
 FOUND=$({
-  grep -hoE '\b[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(' $HEADERS | tr -d ' (' | sort -u | grep -vE "$IGNORE" | report 2 function
+  sed 's|//.*||' $HEADERS | grep -oE '\b[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(' | tr -d ' (' | sort -u | grep -vE "$IGNORE" | report 2 function
   grep -hoE '\b(const|constexpr)[^=;(]*\b[A-Za-z_][A-Za-z0-9_]*[[:space:]]*(=|\[)' $HEADERS \
     | grep -oE '[A-Za-z_][A-Za-z0-9_]*[[:space:]]*(=|\[)$' | tr -d ' =[' | sort -u | report 1 constant
   grep -oE '\b(icon|img|bmp|image|logo|frame|sprite)[A-Za-z0-9_]*\b' images.h | sort -u | report 1 bitmap
