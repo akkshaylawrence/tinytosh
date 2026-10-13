@@ -218,7 +218,7 @@ impl Presence {
     fn terms(&self, running: &BTreeMap<String, String>) -> LeaseTerms {
         LeaseTerms {
             enabled: self.saved.enabled && !self.quitting,
-            awake: self.sleep_started.map_or(true, |at| at.elapsed() > SLEEP_LATCH),
+            awake: self.sleep_started.is_none_or(|at| at.elapsed() > SLEEP_LATCH),
             display: platform::display_awake(),
             watch_open: watch_allows(&self.saved.watch, running),
         }
@@ -533,9 +533,11 @@ mod tests {
 
     #[test]
     fn command_carries_intent_and_a_longer_lease_over_wifi() {
-        let mut presence = Presence::default();
-        presence.saved = Saved { enabled: false, profile: 1, watch: BTreeMap::new() };
-        presence.trigger_seq = 4;
+        let mut presence = Presence {
+            saved: Saved { enabled: false, profile: 1, watch: BTreeMap::new() },
+            trigger_seq: 4,
+            ..Presence::default()
+        };
         let serial = presence.command(false);
         assert!(serial.paused && !serial.lease);
         assert_eq!((serial.profile, serial.trigger_seq, serial.lease_ms), (1, 4, SERIAL_LEASE_MS));
