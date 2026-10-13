@@ -91,7 +91,6 @@ const ConfigField CONFIG_FIELDS[] = {
 
     {"weather", "temp_unit", &Config::temp_unit},
     {"weather", "round_temps", &Config::round_temps},
-    {"weather", "show_header", &Config::weather_show_header},
     {"weather", "custom_sync_min", &Config::custom_weather_int_min},
 
     {"aqi", "type", &Config::aqi_type},
@@ -175,7 +174,6 @@ void JsonSerializer::populateConfigDoc(const Config& config, JsonObject configOb
     }
     configObj["screens"]["order"] = orderStr;
 
-    writeValues(configObj["weather"], config.weather_values);
     writeValues(configObj["aqi"], config.aqi_values);
 
     JsonObject currency = configObj["currency"];
@@ -222,13 +220,7 @@ String JsonSerializer::buildAppStateJson(const AppState& state) {
     weather["update_time"] = state.weather.update_time;
     if (!isnan(state.weather.temp)) {
         weather["temp"] = String(state.weather.temp, 1);
-        weather["apparent_temperature"] = String(state.weather.apparent_temperature, 1);
-        weather["humidity"] = String(state.weather.humidity);
-        weather["wind_speed"] = String(state.weather.wind_speed, 1);
         weather["weather_code"] = state.weather.weather_code;
-        weather["precipitation_probability"] = String(state.weather.precipitation_probability, 0);
-        weather["pressure"] = String(state.weather.pressure, 0);
-        weather["visibility"] = String(state.weather.visibility / 1000.0, 1);
     }
 
     if (state.aqi.aqi != -1) {
@@ -386,7 +378,6 @@ bool JsonSerializer::parseConfig(const char* jsonString, AppState& state) {
         }
     }
 
-    readValues(doc["weather"], config.weather_values);
     readValues(doc["aqi"], config.aqi_values);
 
     JsonObjectConst currency = doc["currency"];
@@ -412,7 +403,7 @@ bool JsonSerializer::parseConfig(const char* jsonString, AppState& state) {
     state.moon.last_fetch_yday = -1;
     state.population.last_fetch_yday = -1;
 
-    if (!config.show_weather) { state.weather.temp = NAN; state.weather.humidity = 0; state.weather.apparent_temperature = NAN; state.weather.wind_speed = NAN; }
+    if (!config.show_weather) state.weather = WeatherData();
     if (!config.show_aqi) state.aqi = AirQualityData();
     if (!config.show_daylight) state.daylight = DaylightData();
     if (!config.show_moon) state.moon = MoonData();

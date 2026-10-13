@@ -295,12 +295,6 @@
                 <div id="weather-grid" class="hidden">
                     <div class="dashboard-grid">
                       <div class="tile"><div class="tile-icon" id="icon-temp">☀️</div><div class="tile-value" id="value-temp">--</div><div class="tile-label">Temperature</div></div>
-                      <div class="tile weather-extra-tile hidden" data-value-key="feels"><div class="tile-icon">🤒</div><div class="tile-value" id="value-feels">--</div><div class="tile-label">Feels Like</div></div>
-                      <div class="tile weather-extra-tile hidden" data-value-key="humidity"><div class="tile-icon">💧</div><div class="tile-value" id="value-hum">--%</div><div class="tile-label">Humidity</div></div>
-                      <div class="tile weather-extra-tile hidden" data-value-key="wind"><div class="tile-icon">💨</div><div class="tile-value" id="value-wind">--</div><div class="tile-label">Wind Speed</div></div>
-                      <div class="tile weather-extra-tile hidden" data-value-key="precipitation"><div class="tile-icon">🌧️</div><div class="tile-value" id="value-precipitation">--</div><div class="tile-label">Precipitation</div></div>
-                      <div class="tile weather-extra-tile hidden" data-value-key="pressure"><div class="tile-icon">📊</div><div class="tile-value" id="value-pressure">--</div><div class="tile-label">Pressure</div></div>
-                      <div class="tile weather-extra-tile hidden" data-value-key="visibility"><div class="tile-icon">👁️</div><div class="tile-value" id="value-visibility">--</div><div class="tile-label">Visibility</div></div>
                     </div>
                     <div class="update-footer" id="weather-upd">Last Update: --</div>
                 </div>
@@ -310,21 +304,6 @@
                   <label class="radio-label"><input type="radio" name="temp_unit" value="F"> °F</label>
                 </div>
                 <label class="checkbox-label"><input type="checkbox" name="round_temps"> Round Temperature Values</label>
-
-                <label>Layout:</label>
-                <div class="radio-group">
-                  <label class="radio-label"><input type="radio" name="weather_show_header" value="1"> With Header (Location &amp; Time)</label>
-                  <label class="radio-label"><input type="radio" name="weather_show_header" value="0"> No Header (more data)</label>
-                </div>
-                <label id="weatherValuesLabel">Extra Values (up to 6):</label>
-                <div class="radio-group" style="flex-wrap:wrap; row-gap:8px;">
-                  <label class="checkbox-label"><input type="checkbox" class="weather-val-chk" data-key="feels" name="wv_feels"> Feels Like</label>
-                  <label class="checkbox-label"><input type="checkbox" class="weather-val-chk" data-key="humidity" name="wv_humidity"> Humidity</label>
-                  <label class="checkbox-label"><input type="checkbox" class="weather-val-chk" data-key="wind" name="wv_wind"> Wind Speed</label>
-                  <label class="checkbox-label"><input type="checkbox" class="weather-val-chk" data-key="precipitation" name="wv_precipitation"> Precipitation Chance</label>
-                  <label class="checkbox-label"><input type="checkbox" class="weather-val-chk" data-key="pressure" name="wv_pressure"> Pressure</label>
-                  <label class="checkbox-label"><input type="checkbox" class="weather-val-chk" data-key="visibility" name="wv_visibility"> Visibility</label>
-                </div>
                 <hr>
                 <label class="checkbox-label"><input type="checkbox" id="customWeatherSyncChk"> Custom Data Sync</label>
                 <div id="customWeatherSyncFields" class="collapsible">

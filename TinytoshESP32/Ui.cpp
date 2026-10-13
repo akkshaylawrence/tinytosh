@@ -280,6 +280,11 @@ void Canvas::vline(int x, int y, int h) {
   g_.drawFastVLine(x_ + x, y_ + y, h, ink_);
 }
 
+void Canvas::line(int x0, int y0, int x1, int y1) {
+  Group element("line");
+  g_.drawLine(x_ + x0, y_ + y0, x_ + x1, y_ + y1, ink_);
+}
+
 void Canvas::dotted(int x, int y, int w) {
   Group element("rule", KIND_DIVIDER);
   for (int i = 0; i < w; i += 2) g_.drawPixel(x_ + x + i, y_ + y, ink_);

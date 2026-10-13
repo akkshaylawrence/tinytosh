@@ -567,19 +567,16 @@
                     <div class="feature-item" id="screen-weather">
                         <div class="feature-header">🌤️ Weather Station</div>
                         <div class="feature-section-title">Function</div>
-                        <p>Fetches and displays real-time weather conditions and daily forecasts based on your location.</p>
+                        <p>Fetches and displays real-time weather conditions and a 12-hour forecast based on your location.</p>
                         <div class="feature-section-title">Settings</div>
                         <ul>
                             <li><strong>Temperature Unit:</strong> Toggle between Celsius (°C) and Fahrenheit (°F).</li>
                             <li><strong>Round Values:</strong> Choose between rounded integers (22°) or precise decimals (21.8°).</li>
-                            <li><strong>Layout:</strong> "With Header" keeps the City/Time bar and up to 3 extra values. "No Header" drops the bar for a bigger centered temperature and up to 6 extra values.</li>
-                            <li><strong>Extra Values:</strong> Pick which readings fill the footer (or grid, in No Header mode): Feels Like, Humidity, Wind Speed, Precipitation Chance, Pressure, and Visibility.</li>
                             <li><strong>Custom Sync Interval:</strong> Optionally set a refresh rate for this screen that's independent of the global Data Sync Interval.</li>
                         </ul>
                         <div class="feature-section-title">Layout</div>
                         <p>
-                            <strong>With Header:</strong> Top: City and Time. Center: Big Temperature and condition icon/desc. Bottom: your 3 chosen values.<br>
-                            <strong>No Header:</strong> Temperature, icon, and description centered on the left. Right: a vertical list of your chosen values (up to 6), evenly spaced.
+                            Left: condition icon, current temperature, and description. Right: the next 12 hours, with the high and low on top, a temperature line, chance-of-rain bars, and the hour of day along the bottom.
                         </p>
                         <span class="api-tag">Source: api.open-meteo.com</span>
 
@@ -591,25 +588,7 @@
                                         <div class="assembly-img-wrapper">
                                             <img src="img/render_weather.png" alt="Weather Layout Render">
                                         </div>
-                                        <div class="assembly-caption">With Header - Layout Render</div>
-                                    </div>
-                                    <div class="assembly-item">
-                                        <div class="assembly-img-wrapper">
-                                            <img src="img/real_weather.jpg" alt="Weather Real Photo" class="real-photo">
-                                        </div>
-                                        <div class="assembly-caption">With Header - Real Photo</div>
-                                    </div>
-                                    <div class="assembly-item">
-                                        <div class="assembly-img-wrapper">
-                                            <img src="img/render_weather_headless.png" alt="Weather No Header Layout Render">
-                                        </div>
-                                        <div class="assembly-caption">No Header - Layout Render</div>
-                                    </div>
-                                    <div class="assembly-item">
-                                        <div class="assembly-img-wrapper">
-                                            <img src="img/real_weather_headless.jpg" alt="Weather No Header Real Photo" class="real-photo">
-                                        </div>
-                                        <div class="assembly-caption">No Header - Real Photo</div>
+                                        <div class="assembly-caption">Layout Render</div>
                                     </div>
                                 </div>
                             </div>

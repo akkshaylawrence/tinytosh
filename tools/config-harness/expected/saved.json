@@ -70,16 +70,7 @@
   "weather": {
     "temp_unit": "Cx",
     "round_temps": 0,
-    "show_header": 1,
-    "custom_sync_min": 6,
-    "values": [
-      "feels",
-      "humidity",
-      "wind",
-      "precipitation",
-      "pressure",
-      "visibility"
-    ]
+    "custom_sync_min": 6
   },
   "aqi": {
     "type": "USx",

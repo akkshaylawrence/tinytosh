@@ -2,9 +2,9 @@
   "screens": {
     "order": "3,1"
   },
-  "weather": {
+  "aqi": {
     "values": [
-      "wind"
+      "pm10"
     ]
   }
 }

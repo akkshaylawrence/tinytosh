@@ -21,34 +21,47 @@ String temperature(const Config& config, float value) {
   return config.round_temps ? String((int)round(value)) : String(value, 1);
 }
 
-Ui::Stat statFor(const String& key, const Config& config, const WeatherData& data, bool valid) {
-  Ui::Stat s;
-  s.icon = icon_drop;
-  s.text = "--";
-  if (key == "feels") {
-    s.icon = icon_feel;
-    if (valid) {
-      s.text = temperature(config, data.apparent_temperature);
-      s.unit = degree_icon_small;
-      s.unitW = 4;
-      s.unitH = 4;
-    }
-  } else if (key == "humidity") {
-    if (valid) s.text = String(data.humidity) + "%";
-  } else if (key == "wind") {
-    s.icon = icon_wind;
-    if (valid) s.text = String((int)round(data.wind_speed)) + "km";
-  } else if (key == "precipitation") {
-    s.icon = icon_precipitation;
-    if (valid && !isnan(data.precipitation_probability)) s.text = String((int)round(data.precipitation_probability)) + "%";
-  } else if (key == "pressure") {
-    s.icon = icon_pressure;
-    if (valid && !isnan(data.pressure)) s.text = String((int)round(data.pressure));
-  } else if (key == "visibility") {
-    s.icon = icon_visibility;
-    if (valid && !isnan(data.visibility)) s.text = String((int)round(data.visibility / 1000.0)) + "km";
+// The forecast: a temperature line over chance-of-rain bars, one column per hour.
+const int GRAPH_X = SIDE_W + 7;
+const int COLUMN_W = 6;
+const int LINE_TOP = 8;
+const int LINE_BOTTOM = 30;
+const int BARS_BASE = 42;
+const int BARS_H = 9;
+const float MIN_SPAN = 4;   // degrees; keeps a steady day from drawing as a jagged one
+
+void forecast(Ui::Canvas& c, const Config& config, const WeatherData& data) {
+  float low = data.hourly_temp[0], high = low;
+  for (float t : data.hourly_temp) {
+    if (t < low) low = t;
+    if (t > high) high = t;
   }
-  return s;
+  c.text("H " + String((int)round(high)) + "  L " + String((int)round(low)), GRAPH_X, 0, Ui::FONT_SMALL);
+
+  const float span = max(high - low, MIN_SPAN);
+  const float floor = (high + low - span) / 2;
+  {
+    Ui::Group graph("forecast graph");
+    int lastX = 0, lastY = 0;
+    for (int i = 0; i < WEATHER_HOURS; i++) {
+      const int x = GRAPH_X + i * COLUMN_W;
+      const int y = LINE_BOTTOM - (int)round((data.hourly_temp[i] - floor) / span * (LINE_BOTTOM - LINE_TOP));
+      if (i > 0) c.line(lastX, lastY, x + 2, y);
+      lastX = x + 2;
+      lastY = y;
+      const int bar = (data.hourly_rain[i] * BARS_H + 50) / 100;
+      if (bar > 0) c.fill(x, BARS_BASE - bar, COLUMN_W - 2, bar);
+    }
+    c.dotted(GRAPH_X, BARS_BASE, WEATHER_HOURS * COLUMN_W - 1);
+  }
+
+  const bool twelveHour = config.time_format == "12";
+  for (int i = 0; i < WEATHER_HOURS; i += 3) {
+    int hour = (data.first_hour + i) % 24;
+    if (twelveHour) hour = hour % 12 == 0 ? 12 : hour % 12;
+    const String label = (hour < 10 && !twelveHour ? "0" : "") + String(hour);
+    c.text(label, GRAPH_X + i * COLUMN_W, BARS_BASE + 3, Ui::FONT_SMALL);
+  }
 }
 
 }  // namespace
@@ -58,28 +71,9 @@ void Screens::drawWeather(Ui::Surface& ui, const AppState& state, int) {
   const WeatherData& data = state.weather;
   const bool valid = !isnan(data.temp) && data.weather_code != -1;
 
-  Ui::Stat stats[6];
-  int count = 0;
-  for (int i = 0; i < 6; i++) {
-    if (config.weather_values[i].length() > 0) stats[count++] = statFor(config.weather_values[i], config, data, valid);
-  }
-
   const String temp = valid ? temperature(config, data.temp) : String("--");
   const String description = valid ? ScreenHost::weatherDescription(data.weather_code) : String("No Data");
   const unsigned char* picture = valid ? conditionIcon(data.weather_code, data.is_day) : icon_cloud;
-
-  if (config.weather_show_header) {
-    const String city = valid ? Ui::ascii(config.city) : String("No Location");
-    Ui::Canvas c = ui.frame(city, ScreenHost::clock(config.time_format));
-
-    Ui::Font font = c.largestFit(temp, 80, Ui::FONT_HUGE);
-    c.textWithMark(temp, 0, 4 + (21 - c.textHeight(font)) / 2, font, degree_icon, 12, 12);
-    c.icon(picture, c.w - 24, 0, 24, 24);
-    c.textFitRight(description, c.w, 27, 70, Ui::FONT_SMALL);
-    c.hline(0, 35, c.w);
-    c.statRow(stats, count, 38);
-    return;
-  }
 
   Ui::Canvas c = ui.frame("Weather");
   c.icon(picture, (SIDE_W - 24) / 2, 0, 24, 24);
@@ -88,5 +82,11 @@ void Screens::drawWeather(Ui::Surface& ui, const AppState& state, int) {
   c.textWithMark(temp, tempX, 26, font, degree_icon_small, 4, 4);
   c.textFitCentered(description, SIDE_W / 2, 43, SIDE_W, Ui::FONT_SMALL);
   c.vline(SIDE_W + 2, 0, c.h);
-  c.statGrid(stats, count, SIDE_W + 5, c.w - SIDE_W - 5);
+
+  if (valid && data.first_hour >= 0) {
+    forecast(c, config, data);
+  } else {
+    const int graphW = c.w - GRAPH_X;
+    c.textFitCentered("No Forecast", GRAPH_X + graphW / 2, (c.h - c.textHeight(Ui::FONT_SMALL)) / 2, graphW, Ui::FONT_SMALL);
+  }
 }
