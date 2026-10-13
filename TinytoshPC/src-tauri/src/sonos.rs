@@ -2,11 +2,11 @@ use std::collections::BTreeMap;
 use std::net::Ipv4Addr;
 use std::thread;
 use std::time::Duration;
-use any_ascii::any_ascii;
 use mdns_sd::{ServiceDaemon, ServiceEvent};
 use tauri::Manager;
 
-use crate::{AppState, MediaStats};
+use crate::media::{MediaStats, MediaStatus};
+use crate::AppState;
 
 const SONOS_SERVICE_TYPE: &str = "_sonos._tcp.local.";
 const SONOS_PORT: u16 = 1400;
@@ -49,8 +49,8 @@ pub fn spawn(app_handle: tauri::AppHandle) {
                 .filter_map(|ip| poll_speaker(&agent, *ip))
                 .collect();
 
-            let media = polled.iter().find(|m| m.media_status == "playing")
-                .or_else(|| polled.iter().find(|m| m.media_status == "paused"))
+            let media = polled.iter().find(|m| m.media_status == MediaStatus::Playing)
+                .or_else(|| polled.iter().find(|m| m.media_status == MediaStatus::Paused))
                 .cloned()
                 .unwrap_or_default();
             *state.sonos_media.lock().unwrap() = media;
@@ -92,8 +92,8 @@ fn element_text(doc: &roxmltree::Document, name: &str) -> String {
 fn parse_speaker(transport_xml: &str, position_xml: &str) -> Option<MediaStats> {
     let transport = roxmltree::Document::parse(transport_xml).ok()?;
     let status = match element_text(&transport, "CurrentTransportState").as_str() {
-        "PLAYING" | "TRANSITIONING" => "playing",
-        "PAUSED_PLAYBACK" => "paused",
+        "PLAYING" | "TRANSITIONING" => MediaStatus::Playing,
+        "PAUSED_PLAYBACK" => MediaStatus::Paused,
         _ => return None,
     };
 
@@ -118,12 +118,7 @@ fn parse_speaker(transport_xml: &str, position_xml: &str) -> Option<MediaStats> 
         return None;
     }
 
-    Some(MediaStats {
-        media_status: status.to_string(),
-        media_name: any_ascii(&title),
-        media_author: any_ascii(&creator),
-        media_album: any_ascii(&album),
-    })
+    Some(MediaStats::track(status, &title, &creator, &album))
 }
 
 #[cfg(test)]
@@ -142,9 +137,9 @@ mod tests {
         format!("&lt;DIDL-Lite xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\" xmlns:r=\"urn:schemas-rinconnetworks-com:metadata-1-0/\" xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\"&gt;&lt;item id=\"-1\" parentID=\"-1\" restricted=\"true\"&gt;&lt;dc:title&gt;{title}&lt;/dc:title&gt;&lt;dc:creator&gt;{creator}&lt;/dc:creator&gt;&lt;upnp:album&gt;{album}&lt;/upnp:album&gt;&lt;r:streamContent&gt;{stream_content}&lt;/r:streamContent&gt;&lt;/item&gt;&lt;/DIDL-Lite&gt;")
     }
 
-    fn media(status: &str, name: &str, author: &str, album: &str) -> MediaStats {
+    fn media(status: MediaStatus, name: &str, author: &str, album: &str) -> MediaStats {
         MediaStats {
-            media_status: status.to_string(),
+            media_status: status,
             media_name: name.to_string(),
             media_author: author.to_string(),
             media_album: album.to_string(),
@@ -161,20 +156,20 @@ mod tests {
     #[test]
     fn playing_track() {
         let pos = position("x-sonos-spotify:abc", &didl("Song", "Artist", "Album", ""));
-        assert_eq!(parse_speaker(&transport("PLAYING"), &pos), Some(media("playing", "Song", "Artist", "Album")));
-        assert_eq!(parse_speaker(&transport("TRANSITIONING"), &pos), Some(media("playing", "Song", "Artist", "Album")));
+        assert_eq!(parse_speaker(&transport("PLAYING"), &pos), Some(media(MediaStatus::Playing, "Song", "Artist", "Album")));
+        assert_eq!(parse_speaker(&transport("TRANSITIONING"), &pos), Some(media(MediaStatus::Playing, "Song", "Artist", "Album")));
     }
 
     #[test]
     fn paused_track() {
         let pos = position("x-sonos-spotify:abc", &didl("Song", "Artist", "Album", ""));
-        assert_eq!(parse_speaker(&transport("PAUSED_PLAYBACK"), &pos), Some(media("paused", "Song", "Artist", "Album")));
+        assert_eq!(parse_speaker(&transport("PAUSED_PLAYBACK"), &pos), Some(media(MediaStatus::Paused, "Song", "Artist", "Album")));
     }
 
     #[test]
     fn radio_uses_stream_content() {
         let pos = position("x-sonosapi-stream:s1", &didl("Radio Station", "", "", "Artist - Song"));
-        assert_eq!(parse_speaker(&transport("PLAYING"), &pos), Some(media("playing", "Artist - Song", "", "")));
+        assert_eq!(parse_speaker(&transport("PLAYING"), &pos), Some(media(MediaStatus::Playing, "Artist - Song", "", "")));
     }
 
     #[test]
@@ -188,7 +183,7 @@ mod tests {
         let pos = position("x-sonos-spotify:abc", &didl("Rock &amp;amp; Roll", "Artist &amp;amp; Friends", "Album", ""));
         assert_eq!(
             parse_speaker(&transport("PLAYING"), &pos),
-            Some(media("playing", "Rock & Roll", "Artist & Friends", "Album"))
+            Some(media(MediaStatus::Playing, "Rock & Roll", "Artist & Friends", "Album"))
         );
     }
 }
