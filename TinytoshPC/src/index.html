@@ -11,7 +11,7 @@
   <body>
     <div class="container">
       
-      <div class="app-header">Tinytosh PC</div>
+      <div class="app-header" id="app-title">Tinytosh PC</div>
 
       <div class="panel header-panel">
         <div id="time-display">--:--</div>
@@ -22,11 +22,12 @@
         <div class="identity-box">
           <div id="device-id-text" class="id-text">Loading...</div>
           <div id="device-ip-text" class="ip-text">TINYTOSH IP: --</div>
-          <div id="tinytosh-link-status" class="status-badge">NOT CONNECTED</div>
+          <div id="tinytosh-link-status" class="status-badge pc-only">NOT CONNECTED</div>
+          <div id="pc-link-status" class="status-badge web-only"></div>
         </div>
       </div>
       
-      <div class="panel">
+      <div class="panel pc-only">
         <label for="port-select" class="section-label mt-0">TARGET DEVICE</label>
         <select id="port-select"><option value="">Scanning...</option></select>
         
@@ -39,7 +40,7 @@
         <p id="status-text" class="status-badge mt-25">Waiting for connection...</p>
       </div>
 
-      <div class="panel hidden" id="logs-panel">
+      <div class="panel hidden pc-only" id="logs-panel">
         <div class="panel-header-flex">
           <h3 class="panel-title">USB Device Logs</h3>
           <div class="panel-header-actions">
@@ -50,7 +51,7 @@
         <div id="log-container" class="log-container hidden"></div>
       </div>
 
-      <div class="panel">
+      <div class="panel pc-only">
         <h3 class="panel-title">Now Playing</h3>
         <div class="identity-box" style="margin-top: 10px;">
           <div id="media-status" class="status-badge" style="margin-bottom: 5px; color: var(--text-muted);">STOPPED</div>
@@ -60,7 +61,7 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel pc-only">
         <h3 class="panel-title">Local PC Telemetry</h3>
         <div class="dashboard-grid">
           <div class="telemetry-tile">
@@ -85,7 +86,7 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel pc-only">
         <div class="panel-header-flex">
           <h3 class="panel-title">Presence</h3>
           <div class="panel-header-actions">
@@ -312,17 +313,17 @@
 
                 <label>Layout:</label>
                 <div class="radio-group">
-                  <label class="radio-label"><input type="radio" name="weather_show_header" value="1" onchange="updateValueLimits('weather', 6)"> With Header (Location &amp; Time)</label>
-                  <label class="radio-label"><input type="radio" name="weather_show_header" value="0" onchange="updateValueLimits('weather', 6)"> No Header (more data)</label>
+                  <label class="radio-label"><input type="radio" name="weather_show_header" value="1"> With Header (Location &amp; Time)</label>
+                  <label class="radio-label"><input type="radio" name="weather_show_header" value="0"> No Header (more data)</label>
                 </div>
                 <label id="weatherValuesLabel">Extra Values (up to 6):</label>
                 <div class="radio-group" style="flex-wrap:wrap; row-gap:8px;">
-                  <label class="checkbox-label"><input type="checkbox" class="weather-val-chk" data-key="feels" name="wv_feels" onchange="updateValueLimits('weather', 6)"> Feels Like</label>
-                  <label class="checkbox-label"><input type="checkbox" class="weather-val-chk" data-key="humidity" name="wv_humidity" onchange="updateValueLimits('weather', 6)"> Humidity</label>
-                  <label class="checkbox-label"><input type="checkbox" class="weather-val-chk" data-key="wind" name="wv_wind" onchange="updateValueLimits('weather', 6)"> Wind Speed</label>
-                  <label class="checkbox-label"><input type="checkbox" class="weather-val-chk" data-key="precipitation" name="wv_precipitation" onchange="updateValueLimits('weather', 6)"> Precipitation Chance</label>
-                  <label class="checkbox-label"><input type="checkbox" class="weather-val-chk" data-key="pressure" name="wv_pressure" onchange="updateValueLimits('weather', 6)"> Pressure</label>
-                  <label class="checkbox-label"><input type="checkbox" class="weather-val-chk" data-key="visibility" name="wv_visibility" onchange="updateValueLimits('weather', 6)"> Visibility</label>
+                  <label class="checkbox-label"><input type="checkbox" class="weather-val-chk" data-key="feels" name="wv_feels"> Feels Like</label>
+                  <label class="checkbox-label"><input type="checkbox" class="weather-val-chk" data-key="humidity" name="wv_humidity"> Humidity</label>
+                  <label class="checkbox-label"><input type="checkbox" class="weather-val-chk" data-key="wind" name="wv_wind"> Wind Speed</label>
+                  <label class="checkbox-label"><input type="checkbox" class="weather-val-chk" data-key="precipitation" name="wv_precipitation"> Precipitation Chance</label>
+                  <label class="checkbox-label"><input type="checkbox" class="weather-val-chk" data-key="pressure" name="wv_pressure"> Pressure</label>
+                  <label class="checkbox-label"><input type="checkbox" class="weather-val-chk" data-key="visibility" name="wv_visibility"> Visibility</label>
                 </div>
                 <hr>
                 <label class="checkbox-label"><input type="checkbox" id="customWeatherSyncChk"> Custom Data Sync</label>
@@ -362,21 +363,21 @@
 
                 <label>Layout:</label>
                 <div class="radio-group">
-                  <label class="radio-label"><input type="radio" name="aqi_show_header" value="1" onchange="updateValueLimits('aqi', 6)"> With Header (Location &amp; Time)</label>
-                  <label class="radio-label"><input type="radio" name="aqi_show_header" value="0" onchange="updateValueLimits('aqi', 6)"> No Header (more data)</label>
+                  <label class="radio-label"><input type="radio" name="aqi_show_header" value="1"> With Header (Location &amp; Time)</label>
+                  <label class="radio-label"><input type="radio" name="aqi_show_header" value="0"> No Header (more data)</label>
                 </div>
                 <label id="aqiValuesLabel">Extra Values (up to 6):</label>
                 <div class="radio-group" style="flex-wrap:wrap; row-gap:8px;">
-                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="pm25" name="av_pm25" onchange="updateValueLimits('aqi', 6)"> PM 2.5</label>
-                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="pm10" name="av_pm10" onchange="updateValueLimits('aqi', 6)"> PM 10</label>
-                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="no2" name="av_no2" onchange="updateValueLimits('aqi', 6)"> Nitrogen Dioxide</label>
-                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="co" name="av_co" onchange="updateValueLimits('aqi', 6)"> Carbon Monoxide</label>
-                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="co2" name="av_co2" onchange="updateValueLimits('aqi', 6)"> Carbon Dioxide</label>
-                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="so2" name="av_so2" onchange="updateValueLimits('aqi', 6)"> Sulphur Dioxide</label>
-                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="o3" name="av_o3" onchange="updateValueLimits('aqi', 6)"> Ozone</label>
-                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="dust" name="av_dust" onchange="updateValueLimits('aqi', 6)"> Dust</label>
-                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="uv" name="av_uv" onchange="updateValueLimits('aqi', 6)"> UV Index</label>
-                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="ch4" name="av_ch4" onchange="updateValueLimits('aqi', 6)"> Methane</label>
+                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="pm25" name="av_pm25"> PM 2.5</label>
+                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="pm10" name="av_pm10"> PM 10</label>
+                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="no2" name="av_no2"> Nitrogen Dioxide</label>
+                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="co" name="av_co"> Carbon Monoxide</label>
+                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="co2" name="av_co2"> Carbon Dioxide</label>
+                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="so2" name="av_so2"> Sulphur Dioxide</label>
+                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="o3" name="av_o3"> Ozone</label>
+                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="dust" name="av_dust"> Dust</label>
+                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="uv" name="av_uv"> UV Index</label>
+                  <label class="checkbox-label"><input type="checkbox" class="aqi-val-chk" data-key="ch4" name="av_ch4"> Methane</label>
                 </div>
                 <hr>
                 <label class="checkbox-label"><input type="checkbox" id="customAqiSyncChk"> Custom Data Sync</label>
@@ -504,7 +505,7 @@
                     <div class="update-footer" id="currency-upd">Last Update: --</div>
                 </div>
                 <div id="currency-list-container"></div>
-                <button type="button" class="btn-blue" onclick="addCurrencyRow()">+ Add Currency Pair</button>
+                <button type="button" class="btn-blue" id="add-currency-btn">+ Add Currency Pair</button>
                 <label class="checkbox-label"><input type="checkbox" name="currency_fn"> Display Full Currency Name</label>
                 <hr>
                 <label class="checkbox-label"><input type="checkbox" id="customCurrencySyncChk"> Custom Data Sync</label>

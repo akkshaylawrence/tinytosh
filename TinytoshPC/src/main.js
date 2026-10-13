@@ -1,9 +1,21 @@
-const { invoke } = window.__TAURI__.core;
+// This page runs in two places: as the PC app's window, where it reaches the device through the
+// app, and as the device's own web panel, where it talks to the device directly. Everything
+// about a device goes through `device`; the parts that only make sense in the app check `inApp`.
+const inApp = Boolean(window.__TAURI__);
+const invoke = inApp ? window.__TAURI__.core.invoke : null;
+const device = inApp ? {
+    fetchState: () => invoke("fetch_device_data"),
+    saveConfig: (json) => invoke("save_device_settings", { jsonPayload: json }),
+} : {
+    fetchState: () => fetch("/update").then(reply => reply.text()),
+    saveConfig: (json) => fetch("/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: json })
+        .then(reply => { if (!reply.ok) throw new Error("The device answered " + reply.status); }),
+};
 
 // Constants
 
 // UI Update Intervals
-const LOCAL_TELEMETRY_INTERVAL_MS = 500;   
+const LOCAL_TELEMETRY_INTERVAL_MS = 1000;
 const PRESENCE_INTERVAL_MS = 1000;
 const PORT_SCAN_INTERVAL_MS = 2000;        
 const HARDWARE_SYNC_INTERVAL_MS = 15000;   
@@ -327,7 +339,7 @@ async function updatePresence() {
         document.getElementById("presence-reset-btn").disabled = !view.reachable;
         document.getElementById("presence-watch-box").classList.toggle("hidden", !view.watch_supported);
         if (view.watch_supported) drawPresenceWatch(view.watch);
-    } catch (e) {}
+    } catch (e) { console.warn(e); }
 }
 
 function initPresence() {
@@ -427,9 +439,9 @@ async function updateStats() {
                         logContainer.scrollTop = logContainer.scrollHeight;
                     }
                 }
-            } catch(e) {}
+            } catch (e) { console.warn(e); }
         }
-    } catch (e) { }
+    } catch (e) { console.warn(e); }
 }
 
 function handleDisconnectUI() {
@@ -548,7 +560,7 @@ async function loadPorts() {
             }
         }
 
-    } catch (e) { }
+    } catch (e) { console.warn(e); }
 }
 
 async function toggleConnection() {
@@ -581,7 +593,7 @@ async function toggleConnection() {
             btn.className = "btn-secondary";
             select.disabled = false;
             handleDisconnectUI();
-        } catch(e) {}
+        } catch (e) { console.warn(e); }
     }
 }
 
@@ -595,7 +607,7 @@ async function initAutostart() {
             try { await invoke("set_autostart", { enable: e.target.checked }); } 
             catch (err) { e.target.checked = !e.target.checked; }
         });
-    } catch (e) { }
+    } catch (e) { console.warn(e); }
 }
 
 function updateVisibility() {
@@ -651,7 +663,6 @@ function updateValueLimits(prefix, maxNoHeader) {
   const label = document.getElementById(prefix + 'ValuesLabel');
   if (label) label.innerText = 'Extra Values (' + ((headerRadio && headerRadio.value === '1') ? 'up to 3' : 'up to 6') + '):';
 }
-window.updateValueLimits = updateValueLimits;
 
 function updateExtraValueTiles(prefix, values) {
   const selected = values || [];
@@ -762,10 +773,25 @@ function updateLiveHeader() {
 
 async function fetchDeviceData() {
     try {
-        const jsonStr = await invoke("fetch_device_data");
+        const jsonStr = await device.fetchState();
         const d = JSON.parse(jsonStr);
 
-        const set = (id, val, html=false) => { const el = document.getElementById(id); if(el && val !== undefined) { if(html) el.innerHTML = val; else el.innerText = val; return true; } return false; };
+        // Text from the device is never parsed as HTML: it carries names from other people's servers.
+        const set = (id, val) => { const el = document.getElementById(id); if(el && val !== undefined) el.innerText = val; };
+        const setWithUnit = (id, val, unit) => {
+            const el = document.getElementById(id); if (!el) return;
+            const small = document.createElement('small'); small.innerText = unit;
+            el.replaceChildren(val + (unit ? ' ' : ''), small);
+        };
+        const setLines = (id, lines) => {
+            const el = document.getElementById(id); if (!el) return;
+            el.replaceChildren(...lines.flatMap((line, i) => {
+                const span = document.createElement('span');
+                span.innerText = line.text;
+                if (line.small) span.style.fontSize = line.small;
+                return i === 0 ? [span] : [document.createElement('br'), span];
+            }));
+        };
         const setVal = (name, val) => { const el = document.querySelector('[name="'+name+'"]'); if(el && document.activeElement !== el && val !== undefined) el.value = val; };
         const setCb = (id, val, byName=false) => {
             const el = byName ? document.querySelector('[name="'+id+'"]') : document.getElementById(id);
@@ -780,8 +806,12 @@ async function fetchDeviceData() {
         if (netCfg && netCfg.ip_address !== undefined) {
           currentDeviceIp = netCfg.ip_address;
         }
-        if (netCfg && (netCfg.device_id !== undefined || netCfg.ip_address !== undefined)) {
+        if (inApp && netCfg && (netCfg.device_id !== undefined || netCfg.ip_address !== undefined)) {
           loadPorts();
+        }
+        if (!inApp && netCfg) {
+          set('device-id-text', netCfg.device_id);
+          set('device-ip-text', 'TINYTOSH IP: ' + (netCfg.ip_address || '--'));
         }
 
         if (d.config !== undefined && !formDirty) {
@@ -818,6 +848,13 @@ async function fetchDeviceData() {
             setVal('longitude', c.general.longitude);
             setVal('country_code', c.general.country_code);
             setVal('city', c.general.city);
+            // Browsers list some zones under an older name (Asia/Calcutta for Asia/Kolkata), so the
+            // device's zone may be missing from the list. Without it the select would fall back to
+            // its first entry and a save would move the device there.
+            const tzSelect = document.querySelector('select[name="timezone"]');
+            if (c.general.timezone && ![...tzSelect.options].some(opt => opt.value === c.general.timezone)) {
+                tzSelect.add(new Option(c.general.timezone, c.general.timezone), 0);
+            }
             setVal('timezone', c.general.timezone);
             setVal('ntp_server', c.general.ntp_server);
 
@@ -884,8 +921,8 @@ async function fetchDeviceData() {
             if (cuCont) {
                 cuCont.innerHTML = "";
                 if (c.currency.bases && c.currency.bases.length > 0) {
-                    for(let i=0; i<c.currency.bases.length; i++) window.addCurrencyRow(c.currency.bases[i], c.currency.targets[i], c.currency.multipliers[i]);
-                } else { window.addCurrencyRow("usd", "eur", 1); }
+                    for(let i=0; i<c.currency.bases.length; i++) addCurrencyRow(c.currency.bases[i], c.currency.targets[i], c.currency.multipliers[i]);
+                } else { addCurrencyRow("usd", "eur", 1); }
             }
 
             setCb('showMedia', c.screens.show_media);
@@ -961,14 +998,14 @@ async function fetchDeviceData() {
             let gr = document.getElementById('weather-grid'); if(gr) gr.classList.add('hidden');
         }
 
-        const aqiUnitMap = { pm25: ' <small>µg</small>', pm10: ' <small>µg</small>', no2: ' <small>µg</small>', co: ' <small>µg</small>', co2: ' <small>ppm</small>', so2: ' <small>µg</small>', o3: ' <small>µg</small>', dust: ' <small>µg</small>', uv: '', ch4: ' <small>ppb</small>' };
+        const aqiUnitMap = { pm25: 'µg', pm10: 'µg', no2: 'µg', co: 'µg', co2: 'ppm', so2: 'µg', o3: 'µg', dust: 'µg', uv: '', ch4: 'ppb' };
         if (st.aqi && st.aqi.index !== undefined && st.aqi.index !== 'nan') {
             let nd = document.getElementById('aqi-no-data'); if(nd) nd.style.display = 'none';
             let gr = document.getElementById('aqi-grid'); if(gr) gr.classList.remove('hidden');
 
             set('value-aqi', st.aqi.index);
             const aqiLabel = document.querySelector('#value-aqi + .tile-label'); if(aqiLabel) aqiLabel.innerText = st.aqi.status + ' Index';
-            Object.keys(aqiUnitMap).forEach(k => { const raw = st.aqi[k]; if (raw !== undefined && raw !== 'nan') set('value-'+k, raw + aqiUnitMap[k], true); });
+            Object.keys(aqiUnitMap).forEach(k => { const raw = st.aqi[k]; if (raw !== undefined && raw !== 'nan') setWithUnit('value-'+k, raw, aqiUnitMap[k]); });
             set('aqi-upd', 'Last Update: ' + (st.weather ? st.weather.update_time : ''));
         } else {
             let nd = document.getElementById('aqi-no-data'); if(nd) nd.style.display = 'block';
@@ -1029,12 +1066,9 @@ async function fetchDeviceData() {
         if (st.currency && st.currency.data && st.currency.data.length > 0) {
             let nd = document.getElementById('currency-no-data'); if(nd) nd.style.display = 'none';
             let gr = document.getElementById('currency-grid'); if(gr) gr.classList.remove('hidden');
-            let bStr = "", tStr = "";
-            st.currency.data.forEach(s => {
-                bStr += s.base_text + "<br>";
-                tStr += s.target_text + "<br>";
-            });
-            set('currency-base-val', bStr, true); set('currency-target-val', tStr, true); set('currency-upd', 'Last Update: ' + (st.weather ? st.weather.update_time : ''));
+            setLines('currency-base-val', st.currency.data.map(s => ({ text: s.base_text })));
+            setLines('currency-target-val', st.currency.data.map(s => ({ text: s.target_text })));
+            set('currency-upd', 'Last Update: ' + (st.weather ? st.weather.update_time : ''));
         } else {
             let nd = document.getElementById('currency-no-data'); if(nd) nd.style.display = 'block';
             let gr = document.getElementById('currency-grid'); if(gr) gr.classList.add('hidden');
@@ -1076,8 +1110,14 @@ async function fetchDeviceData() {
             let gr = document.getElementById('bambu-grid'); if(gr) gr.classList.remove('hidden');
 
             set('bambu-status', st.printer.status);
-            set('bambu-prog', st.printer.progress + '% | ' + st.printer.time + 'm<br><span style="font-size:0.9rem">Layer: ' + st.printer.layer + '/' + st.printer.total_layers + '</span>', true);
-            set('bambu-temps', 'Nozzle: ' + parseFloat(st.printer.nozzle).toFixed(1) + '/' + parseFloat(st.printer.nozzle_target).toFixed(1) + '<br>Bed: ' + parseFloat(st.printer.bed).toFixed(1) + '/' + parseFloat(st.printer.bed_target).toFixed(1), true);
+            setLines('bambu-prog', [
+                { text: st.printer.progress + '% | ' + st.printer.time + 'm' },
+                { text: 'Layer: ' + st.printer.layer + '/' + st.printer.total_layers, small: '0.9rem' },
+            ]);
+            setLines('bambu-temps', [
+                { text: 'Nozzle: ' + parseFloat(st.printer.nozzle).toFixed(1) + '/' + parseFloat(st.printer.nozzle_target).toFixed(1) },
+                { text: 'Bed: ' + parseFloat(st.printer.bed).toFixed(1) + '/' + parseFloat(st.printer.bed_target).toFixed(1) },
+            ]);
             set('bambu-fans', 'Part: ' + st.printer.fan_part + ' | Aux: ' + st.printer.fan_aux);
         } else {
             let nd = document.getElementById('bambu-no-data'); if(nd) nd.style.display = 'block';
@@ -1089,16 +1129,18 @@ async function fetchDeviceData() {
             let gr = document.getElementById('flight-grid'); if(gr) gr.classList.remove('hidden');
 
             set('flight-count', st.flight.count);
-            var flClosest = st.flight.callsign ? st.flight.callsign : '--';
-            if (st.flight.route !== undefined) { flClosest += "<br><span style='font-size:0.8rem'>" + st.flight.route + '</span>'; }
-            set('flight-closest', flClosest, true);
+            const flClosest = [{ text: st.flight.callsign ? st.flight.callsign : '--' }];
+            if (st.flight.route !== undefined) flClosest.push({ text: st.flight.route, small: '0.8rem' });
+            setLines('flight-closest', flClosest);
         } else {
             let nd = document.getElementById('flight-no-data'); if(nd) nd.style.display = 'block';
             let gr = document.getElementById('flight-grid'); if(gr) gr.classList.add('hidden');
         }
 
+        if (!inApp && st.pc && st.pc.status !== undefined) set('pc-link-status', st.pc.status);
+
     } catch (e) {
-        let errStr = e.message || e;
+        let errStr = String(e.message || e);
         console.error("Config Sync Error:", errStr);
 
         if (errStr.includes("timeout")) {
@@ -1108,7 +1150,7 @@ async function fetchDeviceData() {
     }
 }
 
-window.updateRowControls = function(containerId, maxLimit) {
+function updateRowControls(containerId, maxLimit) {
     const container = document.getElementById(containerId);
     if(!container) return;
     const rows = container.children;
@@ -1118,15 +1160,9 @@ window.updateRowControls = function(containerId, maxLimit) {
     }
     const removeBtns = container.querySelectorAll('.btn-remove');
     removeBtns.forEach(btn => { btn.style.display = rows.length <= 1 ? 'none' : 'flex'; });
-};
+}
 
-window.removeRow = function(btn, containerId) {
-    btn.parentElement.remove();
-    formDirty = true;
-    updateRowControls(containerId, 5);
-};
-
-window.addCurrencyRow = function(bVal = null, tVal = null, mVal = null) {
+function addCurrencyRow(bVal = null, tVal = null, mVal = null) {
     const container = document.getElementById("currency-list-container");
     if (!container || container.children.length >= 5) return;
     const div = document.createElement("div"); div.className = "multi-row";
@@ -1135,51 +1171,62 @@ window.addCurrencyRow = function(bVal = null, tVal = null, mVal = null) {
       <div class="input-wrapper"><label class="mt-0">Base:</label><select name="currency_bases[]">${cOpts}</select></div>
       <div class="input-wrapper"><label class="mt-0">Target:</label><select name="currency_targets[]">${cOpts}</select></div>
       <div class="input-wrapper"><label class="mt-0">Mult:</label><select name="currency_multipliers[]"><option value="1">1</option><option value="10">10</option><option value="100">100</option><option value="1000">1000</option></select></div>
-      <button type="button" class="btn-remove" onclick="removeRow(this, 'currency-list-container')">-</button>`;
+      <button type="button" class="btn-remove">-</button>`;
+    div.querySelector(".btn-remove").addEventListener("click", () => {
+        div.remove();
+        formDirty = true;
+        updateRowControls('currency-list-container', 5);
+    });
     container.appendChild(div);
     if (bVal) div.querySelector("select[name='currency_bases[]']").value = bVal;
     if (tVal) div.querySelector("select[name='currency_targets[]']").value = tVal;
     if (mVal) div.querySelector("select[name='currency_multipliers[]']").value = mVal;
     formDirty = true;
     updateRowControls('currency-list-container', 5);
-};
+}
+
+function whileVisible(task) {
+    return () => { if (!document.hidden) task(); };
+}
+
+function initApp() {
+    const toggleBtn = document.getElementById("toggle-logs-btn");
+    toggleBtn.addEventListener("click", async () => {
+        isLoggingPaused = !isLoggingPaused;
+        await invoke("toggle_logging", { enable: !isLoggingPaused });
+        toggleBtn.innerText = isLoggingPaused ? "START" : "PAUSE";
+        document.getElementById("log-container").classList.toggle("hidden", isLoggingPaused);
+    });
+    document.getElementById("clear-logs-btn").addEventListener("click", () => {
+        document.getElementById("log-container").innerHTML = "";
+    });
+    document.getElementById("conn-btn").addEventListener("click", toggleConnection);
+
+    initAutostart();
+    loadPorts();
+    initPresence();
+    setInterval(whileVisible(loadPorts), PORT_SCAN_INTERVAL_MS);
+    setInterval(whileVisible(updateStats), LOCAL_TELEMETRY_INTERVAL_MS);
+    setInterval(whileVisible(updatePresence), PRESENCE_INTERVAL_MS);
+}
+
+function initWebPanel() {
+    document.body.classList.add("web");
+    document.title = "Tinytosh | Web Panel";
+    document.getElementById("app-title").innerText = "Tinytosh";
+    document.getElementById("config-placeholder").innerText = "Loading the device configuration...";
+}
 
 window.addEventListener("DOMContentLoaded", () => {
     populateDropdowns();
 
-    const toggleBtn = document.getElementById("toggle-logs-btn");
-    if (toggleBtn) {
-        toggleBtn.addEventListener("click", async () => {
-            isLoggingPaused = !isLoggingPaused;
-            await invoke("toggle_logging", { enable: !isLoggingPaused });
-            toggleBtn.innerText = isLoggingPaused ? "START" : "PAUSE";
-            const logContainer = document.getElementById("log-container");
-            if (logContainer) {
-                if (isLoggingPaused) logContainer.classList.add("hidden");
-                else logContainer.classList.remove("hidden");
-            }
-        });
-    }
+    if (inApp) initApp(); else initWebPanel();
+    setInterval(whileVisible(fetchDeviceData), HARDWARE_SYNC_INTERVAL_MS);
+    setTimeout(fetchDeviceData, inApp ? INITIAL_SYNC_DELAY_MS : 0);
 
-    const clearBtn = document.getElementById("clear-logs-btn");
-    if (clearBtn) {
-        clearBtn.addEventListener("click", () => {
-            const lc = document.getElementById("log-container");
-            if (lc) lc.innerHTML = "";
-        });
-    }
-    
-    const btn = document.getElementById("conn-btn");
-    if(btn) btn.addEventListener("click", toggleConnection);
-    initAutostart();
-    loadPorts();
-    
-    setInterval(loadPorts, PORT_SCAN_INTERVAL_MS); 
-    setInterval(updateStats, LOCAL_TELEMETRY_INTERVAL_MS); 
-    initPresence();
-    setInterval(updatePresence, PRESENCE_INTERVAL_MS);
-    setInterval(fetchDeviceData, HARDWARE_SYNC_INTERVAL_MS); 
-    setTimeout(fetchDeviceData, INITIAL_SYNC_DELAY_MS); 
+    document.querySelectorAll('.weather-val-chk, [name="weather_show_header"]').forEach(el => el.addEventListener('change', () => updateValueLimits('weather', 6)));
+    document.querySelectorAll('.aqi-val-chk, [name="aqi_show_header"]').forEach(el => el.addEventListener('change', () => updateValueLimits('aqi', 6)));
+    document.getElementById("add-currency-btn").addEventListener("click", () => addCurrencyRow());
 
     ['autoDetect', 'nightMode', 'showTime', 'showCalendar', 'showWeather', 'showDaylight', 'showMoon', 'showPopulation', 'showFlight', 'showPc', 'showCurrency', 'showAQI', 'showMedia', 'showBambu', 'showSaver', 'autoCycle', 'customWeatherSyncChk', 'customAqiSyncChk', 'customCurrencySyncChk', 'customFlightSyncChk'].forEach(id => {
         var el = document.getElementById(id);
@@ -1242,8 +1289,10 @@ window.addEventListener("DOMContentLoaded", () => {
     document.getElementById('settings-form').addEventListener('change', () => formDirty = true);
     
     document.getElementById('save-settings-btn').addEventListener('click', async (e) => {
-        e.preventDefault(); 
-        
+        e.preventDefault();
+        // An empty form would overwrite the device's settings with blanks.
+        if (!isConfigLoaded) return;
+
         const saveBtn = document.getElementById('save-settings-btn');
         saveBtn.innerText = "⏳ Saving...";
         saveBtn.style.opacity = "0.7";
@@ -1298,7 +1347,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
             const jsonPayload = JSON.stringify(grouped);
 
-            await invoke("save_device_settings", { jsonPayload: jsonPayload });
+            await device.saveConfig(jsonPayload);
             
             saveBtn.innerText = "✅ Saved Successfully!";
             saveBtn.style.backgroundColor = COLOR_MAIN;
