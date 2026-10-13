@@ -95,7 +95,9 @@ inline String operator+(const String& a, char b) { String r = a; r += b; return 
 struct EspClass {
   uint32_t getFreeHeap() { return 0; }
   uint32_t getMinFreeHeap() { return 0; }
+  uint32_t getMaxAllocHeap() { return 0; }
 };
 extern EspClass ESP;
+inline unsigned uxTaskGetStackHighWaterMark(void*) { return 0; }
 
 #endif

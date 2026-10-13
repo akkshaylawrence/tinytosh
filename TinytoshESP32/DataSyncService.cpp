@@ -208,12 +208,11 @@ void DataSyncService::maybeStartBackgroundSync(AppState& state, bool nightModeLa
     job.fetchedDaylight = job.fetchedMoon = job.fetchedPopulation = false;
 
     jobRunning = true;
-    Serial.println("Spawning background data update task...");
-    if (xTaskCreate(backgroundSyncTaskTrampoline, "BgUpdateTask", 8192, this, 1, NULL) != pdPASS) {
-        Serial.println("Background task could not start. Will retry shortly.");
-        lastFailedAttempt = millis();
-        jobRunning = false;
-    }
+    xTaskNotifyGive(worker);
+}
+
+void DataSyncService::begin() {
+    xTaskCreate(workerEntry, "BgUpdateTask", 8192, this, 1, &worker);
 }
 
 void DataSyncService::applyFinishedBackgroundSync(AppState& state) {
@@ -240,18 +239,21 @@ void DataSyncService::applyFinishedBackgroundSync(AppState& state) {
     jobRunning = false;
 }
 
-void DataSyncService::backgroundSyncTaskTrampoline(void* parameter) {
-    static_cast<DataSyncService*>(parameter)->runBackgroundSyncBody();
+void DataSyncService::workerEntry(void* parameter) {
+    DataSyncService* service = static_cast<DataSyncService*>(parameter);
+    for (;;) {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        service->runJob();
+        service->jobFinished = true;
+    }
 }
 
-void DataSyncService::runBackgroundSyncBody() {
+void DataSyncService::runJob() {
     Serial.println("Background Task: Starting API updates...");
 
     if (WiFi.status() != WL_CONNECTED) {
         Serial.println("Background Task: WiFi offline. Will retry shortly.");
         job.offline = true;
-        jobFinished = true;
-        vTaskDelete(NULL);
         return;
     }
 
@@ -281,7 +283,5 @@ void DataSyncService::runBackgroundSyncBody() {
         for (int i = 0; i < config.currency_count; i++) currencyService.fetchRate(config.currency_bases[i], config.currency_targets[i], job.currencies[i]);
     }
 
-    Serial.println("Background Task: Updates complete.");
-    jobFinished = true;
-    vTaskDelete(NULL);
+    Serial.printf("Background Task: Updates complete. Stack headroom: %u\n", (unsigned)uxTaskGetStackHighWaterMark(NULL));
 }

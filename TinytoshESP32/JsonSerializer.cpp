@@ -215,6 +215,8 @@ String JsonSerializer::buildAppStateJson(const AppState& state) {
     system["uptime_s"] = millis() / 1000;
     system["free_heap"] = ESP.getFreeHeap();
     system["min_free_heap"] = ESP.getMinFreeHeap();
+    system["largest_block"] = ESP.getMaxAllocHeap();
+    system["loop_stack_free"] = uxTaskGetStackHighWaterMark(NULL);
 
     JsonObject weather = status.createNestedObject("weather");
     weather["update_time"] = state.weather.update_time;
