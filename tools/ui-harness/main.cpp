@@ -184,14 +184,12 @@ static AppState baseState() {
   c.currency_multipliers[0] = 1;
 
   s.weather.temp = 25;
-  s.weather.apparent_temperature = 26;
-  s.weather.wind_speed = 12;
-  s.weather.humidity = 45;
   s.weather.weather_code = 2;
   s.weather.is_day = true;
-  s.weather.precipitation_probability = 10;
-  s.weather.pressure = 1013;
-  s.weather.visibility = 10000;
+  s.weather.first_hour = 15;
+  const float temps[WEATHER_HOURS] = {25, 26, 27, 28, 28, 27, 25, 23, 22, 21, 20, 19};
+  const uint8_t rain[WEATHER_HOURS] = {0, 0, 10, 20, 40, 70, 90, 60, 30, 10, 0, 0};
+  for (int i = 0; i < WEATHER_HOURS; i++) { s.weather.hourly_temp[i] = temps[i]; s.weather.hourly_rain[i] = rain[i]; }
 
   s.aqi.aqi = 42;
   s.aqi.pm25 = 12; s.aqi.pm10 = 20; s.aqi.no2 = 8; s.aqi.co = 210; s.aqi.o3 = 61; s.aqi.uv = 3;
@@ -253,23 +251,16 @@ static const Scenario SCENARIOS[] = {
   {"calendar-6-weeks", SCREEN_CALENDAR, [](AppState&) { setDate(2026, 8, 31, 1); }},
   {"calendar-sunday", SCREEN_CALENDAR, [](AppState& s) { s.config.calendar_start_day = "sun"; setDate(2026, 9, 30, 3); }},
   {"calendar-minimal", SCREEN_CALENDAR, [](AppState& s) { s.config.calendar_minimal = true; setDate(2026, 9, 30, 3); }},
-  {"weather-header", SCREEN_WEATHER, [](AppState& s) { s.config.weather_show_header = true; }},
-  {"weather-header-worst", SCREEN_WEATHER, [](AppState& s) {
-    s.config.weather_show_header = true; s.config.round_temps = false; s.config.city = "San Pedro de Macoris";
-    s.weather.temp = -40.5f; s.weather.apparent_temperature = -48.5f; s.weather.weather_code = 99; s.weather.humidity = 100; s.weather.wind_speed = 120;
-    fakeClock = "12:45 PM";
+  {"weather", SCREEN_WEATHER, [](AppState&) {}},
+  {"weather-12h", SCREEN_WEATHER, [](AppState& s) { s.config.time_format = "12"; s.weather.first_hour = 22; }},
+  {"weather-worst", SCREEN_WEATHER, [](AppState& s) {
+    s.config.round_temps = false; s.weather.temp = -40.5f; s.weather.weather_code = 99; s.weather.first_hour = 23;
+    for (int i = 0; i < WEATHER_HOURS; i++) { s.weather.hourly_temp[i] = i % 2 ? 110.4f : -40.5f; s.weather.hourly_rain[i] = 100; }
   }},
-  {"weather-list-3", SCREEN_WEATHER, [](AppState&) {}},
-  {"weather-list-6", SCREEN_WEATHER, [](AppState& s) {
-    const char* keys[] = {"feels", "humidity", "wind", "precipitation", "pressure", "visibility"};
-    for (int i = 0; i < 6; i++) s.config.weather_values[i] = keys[i];
+  {"weather-flat", SCREEN_WEATHER, [](AppState& s) {
+    for (int i = 0; i < WEATHER_HOURS; i++) { s.weather.hourly_temp[i] = 25; s.weather.hourly_rain[i] = 0; }
   }},
-  {"weather-list-worst", SCREEN_WEATHER, [](AppState& s) {
-    const char* keys[] = {"feels", "humidity", "wind", "precipitation", "pressure", "visibility"};
-    for (int i = 0; i < 6; i++) s.config.weather_values[i] = keys[i];
-    s.config.round_temps = false; s.weather.temp = -40.5f; s.weather.apparent_temperature = -48.5f; s.weather.weather_code = 99;
-    s.weather.humidity = 100; s.weather.wind_speed = 120; s.weather.precipitation_probability = 100; s.weather.visibility = 100000;
-  }},
+  {"weather-no-forecast", SCREEN_WEATHER, [](AppState& s) { s.weather.first_hour = -1; }},
   {"weather-no-data", SCREEN_WEATHER, [](AppState& s) { s.weather = WeatherData(); }},
   {"aqi-header", SCREEN_AIR_QUALITY, [](AppState& s) { s.config.aqi_show_header = true; }},
   {"aqi-list-3", SCREEN_AIR_QUALITY, [](AppState&) {}},
@@ -348,7 +339,7 @@ struct Render {
 
 static const Render RENDERS[] = {
   {"render_clock", "time-date"}, {"render_calendar", "calendar"},
-  {"render_weather", "weather-header"}, {"render_weather_headless", "weather-list-3"},
+  {"render_weather", "weather"},
   {"render_aqi", "aqi-header"}, {"render_aqi_headless", "aqi-list-3"},
   {"render_daylight", "daylight"}, {"render_moon", "moon"}, {"render_population", "population"},
   {"render_flight_radar", "flight-radar"}, {"render_flight_closest", "flight-closest"},

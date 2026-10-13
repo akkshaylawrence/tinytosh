@@ -28,7 +28,7 @@
 ### Available Screens & Services
 * 🕒 **Internet Clock:** Auto-syncs time and date based on your location.
 * 📅 **Calendar:** Displays the current date and a full monthly grid.
-* 🌤️ **Weather Station:** Live Temperature, Humidity, and Forecasts (via Open-Meteo). Choose a "With Header" or "No Header" layout, each with its own set of up to 3 or 6 selectable extra values (Feels Like, Humidity, Wind, Precipitation, Pressure, Visibility).
+* 🌤️ **Weather Station:** Current temperature and conditions beside a 12-hour forecast: a temperature line over chance-of-rain bars, with the high and low for the period (via Open-Meteo).
 * 🍃 **Air Quality:** Monitor local AQI levels (US & EU Standards), with the same "With/No Header" layout choice and up to 3 or 6 selectable pollutant readings (PM2.5, PM10, NO2, CO, CO2, SO2, Ozone, Dust, UV Index, Methane).
 * ☀️ **Daylight Info:** Tracks sunrise, sunset, solar noon, and day length.
 * 🌑 **Moon Info:** Tracks the current lunar phase, illumination percentage, and precise moonrise/moonset times with dynamically rendered graphics.

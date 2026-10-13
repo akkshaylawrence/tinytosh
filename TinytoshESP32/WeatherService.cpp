@@ -15,31 +15,13 @@ String WeatherService::getWeatherDescription(int wmo_code) {
     return "Unknown";
 }
 
-bool WeatherService::weatherValueSelected(const Config& config, const char* key) {
-    for (int i = 0; i < 6; i++) {
-        if (config.weather_values[i] == key) return true;
-    }
-    return false;
-}
-
 bool WeatherService::fetchWeather(const Config& config, WeatherData& data, const String& updateTime) {
-  String current = "temperature_2m,weather_code,is_day";
-  bool wantFeels = weatherValueSelected(config, "feels");
-  bool wantHumidity = weatherValueSelected(config, "humidity");
-  bool wantWind = weatherValueSelected(config, "wind");
-  bool wantPrecipitation = weatherValueSelected(config, "precipitation");
-  bool wantPressure = weatherValueSelected(config, "pressure");
-  bool wantVisibility = weatherValueSelected(config, "visibility");
-  if (wantFeels) current += ",apparent_temperature";
-  if (wantHumidity) current += ",relative_humidity_2m";
-  if (wantWind) current += ",wind_speed_10m";
-  if (wantPrecipitation) current += ",precipitation_probability";
-  if (wantPressure) current += ",surface_pressure";
-  if (wantVisibility) current += ",visibility";
-
   String url = String(WEATHER_API_BASE) + "?latitude=" + String(config.latitude, 4) +
                 "&longitude=" + String(config.longitude, 4) +
-                "&current=" + current +
+                "&current=temperature_2m,weather_code,is_day" +
+                "&hourly=temperature_2m,precipitation_probability" +
+                "&forecast_hours=" + String(WEATHER_HOURS) +
+                "&timezone=auto" +
                 "&models=" + WEATHER_MODEL;
 
   Serial.println("WeatherService: Fetching weather data from Open-Meteo -> " + url);
@@ -47,25 +29,29 @@ bool WeatherService::fetchWeather(const Config& config, WeatherData& data, const
   DynamicJsonDocument doc = fetchJson("WeatherService", url, 4096);
   if (doc.isNull()) return false;
 
+  const bool fahrenheit = config.temp_unit == "F";
+  auto inUnit = [fahrenheit](float celsius) { return fahrenheit ? celsius * 1.8f + 32 : celsius; };
+
   JsonObject cur = doc["current"];
-  float temp_c = cur["temperature_2m"].as<float>();
-  data.temp = (config.temp_unit == "F") ? temp_c * 1.8 + 32 : temp_c;
-
-  if (wantFeels) {
-      float apparent_temp_c = cur["apparent_temperature"].as<float>();
-      data.apparent_temperature = (config.temp_unit == "F") ? apparent_temp_c * 1.8 + 32 : apparent_temp_c;
-  } else {
-      data.apparent_temperature = NAN;
-  }
-  data.humidity = wantHumidity ? cur["relative_humidity_2m"].as<int>() : 0;
-  data.wind_speed = wantWind ? cur["wind_speed_10m"].as<float>() : NAN;
-  data.precipitation_probability = wantPrecipitation ? cur["precipitation_probability"].as<float>() : NAN;
-  data.pressure = wantPressure ? cur["surface_pressure"].as<float>() : NAN;
-  data.visibility = wantVisibility ? cur["visibility"].as<float>() : NAN;
-
+  data.temp = inUnit(cur["temperature_2m"].as<float>());
   data.weather_code = cur["weather_code"].as<int>();
   data.is_day = cur["is_day"].as<bool>();
   data.update_time = updateTime;
+
+  JsonArray times = doc["hourly"]["time"];
+  JsonArray temps = doc["hourly"]["temperature_2m"];
+  JsonArray rain = doc["hourly"]["precipitation_probability"];
+  // Times read "2026-10-13T05:00".
+  const String firstTime = times[0] | "";
+  data.first_hour = -1;
+  if ((int)temps.size() >= WEATHER_HOURS && firstTime.length() >= 13) {
+    data.first_hour = firstTime.substring(11, 13).toInt();
+    for (int i = 0; i < WEATHER_HOURS; i++) {
+      data.hourly_temp[i] = inUnit(temps[i].as<float>());
+      const int chance = rain[i] | 0;
+      data.hourly_rain[i] = constrain(chance, 0, 100);
+    }
+  }
 
   Serial.printf("WeatherService: Success! Temp: %.1f%s, Code: %d\n", data.temp, config.temp_unit.c_str(), data.weather_code);
   return true;

@@ -101,6 +101,7 @@ public:
   void pixel(int x, int y, uint16_t color = 1);
   void hline(int x, int y, int w);
   void vline(int x, int y, int h);
+  void line(int x0, int y0, int x1, int y1);
   void dotted(int x, int y, int w);
   void rect(int x, int y, int w, int h);
   void fill(int x, int y, int w, int h);

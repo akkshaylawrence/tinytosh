@@ -113,8 +113,6 @@ struct Config {
   bool round_temps = true;
   String temp_unit = "C";
   String aqi_type = "US";
-  bool weather_show_header = false;                                          // false = "no header" layout (more room for weather_values)
-  String weather_values[6] = {"feels", "humidity", "wind", "", "", ""};      // up to 3 when weather_show_header is true, up to 6 otherwise
   bool aqi_show_header = false;
   String aqi_values[6] = {"pm25", "pm10", "no2", "", "", ""};                // up to 3 when aqi_show_header is true, up to 6 otherwise
   int custom_weather_int_min = -1;
@@ -165,16 +163,15 @@ struct Config {
   int night_action = 1; 
 };
 
+const int WEATHER_HOURS = 12;
+
 struct WeatherData {
   float temp = NAN;
-  float apparent_temperature = NAN;
-  float wind_speed = NAN;
-  int humidity = 0;
   int weather_code = -1;
   bool is_day = true;
-  float precipitation_probability = NAN;
-  float pressure = NAN;
-  float visibility = NAN;
+  int first_hour = -1;                      // local hour of hourly_temp[0]; -1 = no forecast
+  float hourly_temp[WEATHER_HOURS] = {};    // in the configured unit
+  uint8_t hourly_rain[WEATHER_HOURS] = {};  // chance of precipitation, 0..100
   String update_time = "N/A";
 };
 

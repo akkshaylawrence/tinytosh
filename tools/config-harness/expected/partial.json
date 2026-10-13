@@ -70,20 +70,14 @@
   "weather": {
     "temp_unit": "C",
     "round_temps": 1,
-    "show_header": 0,
-    "custom_sync_min": -1,
-    "values": [
-      "wind"
-    ]
+    "custom_sync_min": -1
   },
   "aqi": {
     "type": "US",
     "show_header": 0,
     "custom_sync_min": -1,
     "values": [
-      "pm25",
-      "pm10",
-      "no2"
+      "pm10"
     ]
   },
   "daylight": {

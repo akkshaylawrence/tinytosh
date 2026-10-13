@@ -191,7 +191,7 @@ const CONFIG_FIELD_MAP = {
   show_bambu: ['screens','show_bambu'], show_flight: ['screens','show_flight'], show_saver: ['screens','show_saver'], saver_mask: ['screens','saver_mask'],
   hide_empty_pc: ['screens','hide_empty_pc'], hide_empty_media: ['screens','hide_empty_media'], hide_empty_bambu: ['screens','hide_empty_bambu'], hide_empty_flight: ['screens','hide_empty_flight'],
   cal_start: ['calendar','start_day'], cal_min: ['calendar','minimal'],
-  temp_unit: ['weather','temp_unit'], round_temps: ['weather','round_temps'], weather_show_header: ['weather','show_header'], custom_weather_int_min: ['weather','custom_sync_min'], weather_values: ['weather','values'],
+  temp_unit: ['weather','temp_unit'], round_temps: ['weather','round_temps'], custom_weather_int_min: ['weather','custom_sync_min'],
   aqi_type: ['aqi','type'], aqi_show_header: ['aqi','show_header'], custom_aqi_int_min: ['aqi','custom_sync_min'], aqi_values: ['aqi','values'],
   daylight_min: ['daylight','minimal'],
   moon_min: ['moon','minimal'],
@@ -635,7 +635,6 @@ function updateVisibility() {
   if(ac && si) si.disabled = !ac.checked;
 
   updateFlightSecondaryVisibility();
-  updateValueLimits('weather', 6);
   updateValueLimits('aqi', 6);
 }
 
@@ -875,10 +874,6 @@ async function fetchDeviceData() {
             setCb('showWeather', c.screens.show_weather);
             setRadio('temp_unit', c.weather.temp_unit);
             setCb('round_temps', c.weather.round_temps, true);
-            setRadio('weather_show_header', c.weather.show_header ? 1 : 0);
-            document.querySelectorAll('.weather-val-chk').forEach(cb => { cb.checked = (c.weather.values || []).includes(cb.dataset.key); });
-            updateValueLimits('weather', 6);
-            updateExtraValueTiles('weather', c.weather.values);
             setCb('customWeatherSyncChk', c.weather.custom_sync_min > 0 ? 1 : 0);
             setVal('custom_weather_int_min', c.weather.custom_sync_min > 0 ? c.weather.custom_sync_min : c.general.refresh_min);
 
@@ -983,15 +978,11 @@ async function fetchDeviceData() {
         updateLiveHeader();
 
         const tempUnit = (d.config && d.config.weather) ? d.config.weather.temp_unit : 'C';
-        const weatherFieldMap = { feels: 'apparent_temperature', humidity: 'humidity', wind: 'wind_speed', precipitation: 'precipitation_probability', pressure: 'pressure', visibility: 'visibility' };
-        const weatherTileMap = { feels: 'value-feels', humidity: 'value-hum', wind: 'value-wind', precipitation: 'value-precipitation', pressure: 'value-pressure', visibility: 'value-visibility' };
-        const weatherUnitMap = { feels: ' °'+tempUnit, humidity: '%', wind: ' km/h', precipitation: '%', pressure: ' hPa', visibility: ' km' };
         if (st.weather && st.weather.temp !== undefined && st.weather.temp !== 'nan') {
             let nd = document.getElementById('weather-no-data'); if(nd) nd.style.display = 'none';
             let gr = document.getElementById('weather-grid'); if(gr) gr.classList.remove('hidden');
 
             set('value-temp', st.weather.temp + ' °' + tempUnit);
-            Object.keys(weatherFieldMap).forEach(k => { const raw = st.weather[weatherFieldMap[k]]; if (raw !== undefined && raw !== 'nan') set(weatherTileMap[k], raw + weatherUnitMap[k]); });
             set('weather-upd', 'Last Update: ' + st.weather.update_time);
         } else {
             let nd = document.getElementById('weather-no-data'); if(nd) nd.style.display = 'block';
@@ -1224,7 +1215,6 @@ window.addEventListener("DOMContentLoaded", () => {
     setInterval(whileVisible(fetchDeviceData), HARDWARE_SYNC_INTERVAL_MS);
     setTimeout(fetchDeviceData, inApp ? INITIAL_SYNC_DELAY_MS : 0);
 
-    document.querySelectorAll('.weather-val-chk, [name="weather_show_header"]').forEach(el => el.addEventListener('change', () => updateValueLimits('weather', 6)));
     document.querySelectorAll('.aqi-val-chk, [name="aqi_show_header"]').forEach(el => el.addEventListener('change', () => updateValueLimits('aqi', 6)));
     document.getElementById("add-currency-btn").addEventListener("click", () => addCurrencyRow());
 
@@ -1324,7 +1314,6 @@ window.addEventListener("DOMContentLoaded", () => {
             jsonObj['currency_bases'] = Array.from(form.querySelectorAll('select[name="currency_bases[]"]')).map(s => s.value);
             jsonObj['currency_targets'] = Array.from(form.querySelectorAll('select[name="currency_targets[]"]')).map(s => s.value);
             jsonObj['currency_multipliers'] = Array.from(form.querySelectorAll('select[name="currency_multipliers[]"]')).map(s => Number(s.value));
-            jsonObj['weather_values'] = Array.from(form.querySelectorAll('.weather-val-chk:checked')).map(cb => cb.dataset.key);
             jsonObj['aqi_values'] = Array.from(form.querySelectorAll('.aqi-val-chk:checked')).map(cb => cb.dataset.key);
 
             const customSyncPairs = [

@@ -117,8 +117,6 @@ struct Config {
   bool round_temps = true;
   String temp_unit = "C";
   String aqi_type = "US";
-  bool weather_show_header = false;
-  String weather_values[6] = {"feels", "humidity", "wind", "precipitation", "pressure", "visibility"};
   bool aqi_show_header = false;
   String aqi_values[6] = {"pm25", "pm10", "no2", "co", "co2", "o3"};
   int custom_weather_int_min = -1;
@@ -161,16 +159,15 @@ struct Config {
   int night_action = 1;
 };
 
+const int WEATHER_HOURS = 12;
+
 struct WeatherData {
   float temp = 24.5;
-  float apparent_temperature = 26.0;
-  float wind_speed = 12.0;
-  int humidity = 45;
   int weather_code = 1;
   bool is_day = true;
-  float precipitation_probability = 20.0;
-  float pressure = 1013.0;
-  float visibility = 10000.0;
+  int first_hour = 15;
+  float hourly_temp[WEATHER_HOURS] = {24.5, 26, 27, 28, 28, 27, 25, 23, 22, 21, 20, 19};
+  uint8_t hourly_rain[WEATHER_HOURS] = {0, 0, 10, 20, 40, 70, 90, 60, 30, 10, 0, 0};
   String update_time = "N/A";
 };
 
