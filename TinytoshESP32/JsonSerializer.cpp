@@ -149,6 +149,12 @@ String JsonSerializer::buildAppStateJson(const AppState& state) {
     general["time"] = TimeService::getCurrentTimeShort(state.config.time_format);
     general["date"] = TimeService::getFullDate();
 
+    // What tools/device-stress.sh watches: a reboot resets uptime, a leak lowers the heap floor.
+    JsonObject system = status.createNestedObject("system");
+    system["uptime_s"] = millis() / 1000;
+    system["free_heap"] = ESP.getFreeHeap();
+    system["min_free_heap"] = ESP.getMinFreeHeap();
+
     JsonObject weather = status.createNestedObject("weather");
     weather["update_time"] = state.weather.update_time;
     if (!isnan(state.weather.temp)) {
