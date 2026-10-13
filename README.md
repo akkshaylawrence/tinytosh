@@ -216,6 +216,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 | Version | Date | Key Changes |
 | :--- | :--- | :--- |
+| **v1.2.3** | *Oct 2026* | ⏸️ The **Presence** badge now shows when the mouse is being held still: two pause bars replace the mouse while Presence is switched off in the PC App or none of the watched apps is open. The pause bars and the asleep **Z** also show on the **Mac Desktop** clock and the **Screensaver** tab. |
 | **v1.2.2** | *Oct 2026* | 😴 The **Presence** badge now shows when the computer is asleep or its display is off: the mouse and a **Z** take turns. It replaces the unpaired blink a sleeping computer used to cause by dropping Bluetooth. Needs PC App v1.3.2. |
 | **v1.2.1** | *Oct 2026* | 🖱️ The **Presence** mouse badge now also shows on the **Mac Desktop** clock and the **Screensaver**, on a small tab in the top right corner. It appears there only while the mouse is unpaired or making a gesture. |
 | **v1.2.0** | *Oct 2026* | 🖱️ Added **Presence**: Tinytosh pairs as a **Bluetooth mouse** and keeps the computer active with human-looking pointer gestures, controlled from the PC App (v1.3.0). A mouse badge in the title bar or menu bar shows when it is unpaired, idle or moving. Off by default. |

@@ -36,7 +36,7 @@ Style styleFrom(const String& chrome, const String& paper);
 // blinking solid mouse (no host connected), IDLE an outlined mouse. During MOVING the mouse
 // flashes and the whole bar marches. SLEEPING (the computer is asleep or its display is off)
 // swaps the mouse for a Z once a second. All but IDLE animate off millis().
-enum Badge : uint8_t { BADGE_NONE, BADGE_SEARCHING, BADGE_IDLE, BADGE_MOVING, BADGE_SLEEPING };
+enum Badge : uint8_t { BADGE_NONE, BADGE_SEARCHING, BADGE_IDLE, BADGE_MOVING, BADGE_SLEEPING, BADGE_PAUSED };
 
 // SMALL is the 5 px label face and always prints upper case. The rest are the 5x7 face at 1x to 4x.
 enum Font : uint8_t { FONT_SMALL, FONT_NORMAL, FONT_LARGE, FONT_HUGE, FONT_GIANT };
@@ -146,7 +146,7 @@ public:
   void notice(const String& title, const String* lines, int count);
   // For scenes that paint the whole panel themselves. Paper colour is not applied to them.
   // They have no bar for the mouse badge, so finish() puts it on a tab in the top right corner,
-  // and only while the mouse is unpaired or moving.
+  // for every state but an idle mouse.
   Adafruit_GFX& raw() { rawScene_ = true; return g_; }
   // Applies the paper colour. Call once, after the screen has drawn.
   void finish();

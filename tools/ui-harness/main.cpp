@@ -399,7 +399,7 @@ static long drawScreens() {
     Sheet sheet;
     gallery += std::string("\"") + sc.tag + "\":[";
     // Every screen is drawn with every mouse badge. The sheet shows the badges on two of them.
-    for (Ui::Badge badge : {Ui::BADGE_NONE, Ui::BADGE_SEARCHING, Ui::BADGE_IDLE, Ui::BADGE_MOVING, Ui::BADGE_SLEEPING}) {
+    for (Ui::Badge badge : {Ui::BADGE_NONE, Ui::BADGE_SEARCHING, Ui::BADGE_IDLE, Ui::BADGE_MOVING, Ui::BADGE_SLEEPING, Ui::BADGE_PAUSED}) {
       for (const Scenario& scenario : SCENARIOS) {
         AppState state = baseState();
         fakeClock = "12:45";

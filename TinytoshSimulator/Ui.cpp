@@ -379,6 +379,7 @@ void Surface::badge(int x, uint16_t ink) {
   static const uint8_t OUTLINE[] PROGMEM = {0x7C, 0x92, 0xFE, 0x82, 0x82, 0x82, 0x7C};
   static const uint8_t SOLID[] PROGMEM = {0x7C, 0xEE, 0xFE, 0xFE, 0xFE, 0xFE, 0x7C};
   static const uint8_t SNORE[] PROGMEM = {0xFE, 0xFE, 0x0C, 0x18, 0x30, 0xFE, 0xFE};
+  static const uint8_t PAUSE[] PROGMEM = {0x6C, 0x6C, 0x6C, 0x6C, 0x6C, 0x6C, 0x6C};
   const int y = 1;
   const unsigned long now = millis();
 
@@ -389,6 +390,8 @@ void Surface::badge(int x, uint16_t ink) {
     g_.drawBitmap(x, y, OUTLINE, GLYPH_W, GLYPH_W, ink);
   } else if (badge_ == BADGE_SLEEPING) {
     g_.drawBitmap(x, y, now / BADGE_SNORE_MS % 2 ? SNORE : OUTLINE, GLYPH_W, GLYPH_W, ink);
+  } else if (badge_ == BADGE_PAUSED) {
+    g_.drawBitmap(x, y, PAUSE, GLYPH_W, GLYPH_W, ink);
   } else if (badge_ == BADGE_MOVING) {
     // Flips between a mouse on the bar and a mouse cut out of a block.
     const bool inverted = now / BADGE_INVERT_MS % 2;
@@ -529,7 +532,7 @@ void Surface::notice(const String& title, const String* lines, int count) {
 void Surface::finish() {
   // An idle mouse is left off these scenes, and the tab blinks away whole with the mouse.
   const bool blinkedOff = badge_ == BADGE_SEARCHING && millis() / BADGE_BLINK_MS % 2;
-  if (rawScene_ && (badge_ == BADGE_MOVING || badge_ == BADGE_SEARCHING) && !blinkedOff) {
+  if (rawScene_ && badge_ != BADGE_NONE && badge_ != BADGE_IDLE && !blinkedOff) {
     // A lit tab reads over a dark scene and blends into a lit menu bar.
     const int tabW = GLYPH_W + 4;
     g_.fillRect(SCREEN_W - tabW - 1, 0, tabW + 1, 10, OFF);

@@ -189,7 +189,10 @@ bool DisplayService::badgeChanged(const AppState& state) {
     // A sleeping computer often drops the Bluetooth link too. That is not a call to pair again.
     else if (presence.host_asleep) badge = Ui::BADGE_SLEEPING;
     else if (presence.link == Presence::LINK_ADVERTISING) badge = Ui::BADGE_SEARCHING;
-    else badge = (long)(movingUntil - millis()) > 0 ? Ui::BADGE_MOVING : Ui::BADGE_IDLE;
+    else if ((long)(movingUntil - millis()) > 0) badge = Ui::BADGE_MOVING;
+    // Without a lease the mouse will not move by itself: switched off in the PC app, or no
+    // watched app is open.
+    else badge = presence.paused || !presence.leased ? Ui::BADGE_PAUSED : Ui::BADGE_IDLE;
     return badge != drawnBadge;
 }
 
