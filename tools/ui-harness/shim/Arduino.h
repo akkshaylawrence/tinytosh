@@ -1,7 +1,8 @@
 #ifndef HARNESS_ARDUINO_H
 #define HARNESS_ARDUINO_H
 
-// Just enough of the Arduino core to build the UI library, the screens and Adafruit_GFX on a host.
+// Just enough of the Arduino core to build the UI library, the screens, the config serializer and
+// Adafruit_GFX on a host.
 
 #include <math.h>
 #include <stdint.h>
@@ -46,7 +47,7 @@ public:
     s_ = buf;
   }
 
-  unsigned int length() const { return s_.size(); }
+  size_t length() const { return s_.size(); }
   const char* c_str() const { return s_.c_str(); }
   char operator[](size_t i) const { return s_[i]; }
   void reserve(size_t n) { s_.reserve(n); }
@@ -66,6 +67,10 @@ public:
   String substring(unsigned int from, unsigned int to) const { return from >= s_.size() || to <= from ? String() : String(s_.substr(from, to - from)); }
   void remove(unsigned int index) { if (index < s_.size()) s_.erase(index); }
   void toUpperCase() { for (char& c : s_) c = toupper((unsigned char)c); }
+  void toLowerCase() { for (char& c : s_) c = tolower((unsigned char)c); }
+  long toInt() const { return atol(s_.c_str()); }
+  bool concat(const char* text) { s_ += text; return true; }
+  bool concat(char c) { s_ += c; return true; }
   void trim() {
     size_t a = s_.find_first_not_of(" \t\r\n"), b = s_.find_last_not_of(" \t\r\n");
     s_ = a == std::string::npos ? "" : s_.substr(a, b - a + 1);
@@ -86,5 +91,11 @@ inline String operator+(const char* a, const String& b) { String r(a); r += b; r
 inline String operator+(const String& a, char b) { String r = a; r += b; return r; }
 
 #include "Print.h"
+
+struct EspClass {
+  uint32_t getFreeHeap() { return 0; }
+  uint32_t getMinFreeHeap() { return 0; }
+};
+extern EspClass ESP;
 
 #endif

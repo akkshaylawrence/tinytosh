@@ -1,0 +1,125 @@
+{
+  "network": {
+    "device_id": "",
+    "ip_address": ""
+  },
+  "hardware": {
+    "sda_pin": 8,
+    "scl_pin": 9,
+    "button_pin": 10,
+    "button_type": "touch",
+    "presence_ble": 0
+  },
+  "general": {
+    "refresh_min": 15,
+    "time_format": "24",
+    "auto_detect": 1,
+    "latitude": 0,
+    "longitude": 0,
+    "country": "",
+    "country_code": "",
+    "city": "",
+    "timezone": "",
+    "ntp_server": "",
+    "date_display": 0,
+    "time_style": 0,
+    "ui_chrome": "window",
+    "ui_paper": "black"
+  },
+  "theme": {
+    "bg": "#000000",
+    "card": "#111111",
+    "accent": "#ffffff",
+    "text": "#ffffff"
+  },
+  "night": {
+    "mode": 0,
+    "start": "23:00",
+    "end": "06:00",
+    "action": 1,
+    "dim_start": "22:00"
+  },
+  "screens": {
+    "auto_cycle": 1,
+    "interval_sec": 15,
+    "anim_mask": 62,
+    "saver_mask": 15,
+    "show_time": 1,
+    "show_calendar": 1,
+    "show_weather": 1,
+    "show_aqi": 1,
+    "show_daylight": 1,
+    "show_moon": 1,
+    "show_population": 1,
+    "show_pc": 1,
+    "show_media": 1,
+    "show_currency": 1,
+    "show_bambu": 1,
+    "show_flight": 1,
+    "show_saver": 1,
+    "hide_empty_pc": 1,
+    "hide_empty_media": 1,
+    "hide_empty_bambu": 1,
+    "hide_empty_flight": 1,
+    "order": "3,1,0,2,4,5,6,7,8,9,10,11,12"
+  },
+  "calendar": {
+    "start_day": "mon",
+    "minimal": 0
+  },
+  "weather": {
+    "temp_unit": "C",
+    "round_temps": 1,
+    "show_header": 0,
+    "custom_sync_min": -1,
+    "values": [
+      "wind"
+    ]
+  },
+  "aqi": {
+    "type": "US",
+    "show_header": 0,
+    "custom_sync_min": -1,
+    "values": [
+      "pm25",
+      "pm10",
+      "no2"
+    ]
+  },
+  "daylight": {
+    "minimal": 0
+  },
+  "moon": {
+    "minimal": 0
+  },
+  "population": {
+    "show_world": 1,
+    "show_country": 1
+  },
+  "currency": {
+    "fn": 1,
+    "custom_sync_min": -1,
+    "bases": [
+      "usd"
+    ],
+    "targets": [
+      "eur"
+    ],
+    "multipliers": [
+      1
+    ]
+  },
+  "printer": {
+    "ip": "",
+    "sn": "",
+    "code": ""
+  },
+  "flight": {
+    "mode": "closest",
+    "radius_nm": 25,
+    "units": "aviation",
+    "primary_info": "callsign",
+    "secondary_info": "none",
+    "custom_sync_min": 1
+  }
+}

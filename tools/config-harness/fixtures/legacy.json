@@ -1,0 +1,11 @@
+{
+  "screens": {
+    "show_stock": 1,
+    "order": "13,0,8,1,9,2,3,4,5,6,7,10,11,12"
+  },
+  "currency": {
+    "bases": [],
+    "targets": [],
+    "multipliers": []
+  }
+}

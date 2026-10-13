@@ -1,0 +1,130 @@
+{
+  "hardware": {
+    "sda_pin": 15,
+    "scl_pin": 16,
+    "button_pin": 17,
+    "button_type": "touchx",
+    "presence_ble": 1
+  },
+  "general": {
+    "refresh_min": 22,
+    "time_format": "24x",
+    "auto_detect": 0,
+    "latitude": 12.5,
+    "longitude": -45.25,
+    "country_code": "FR",
+    "city": "x",
+    "timezone": "x",
+    "ntp_server": "  time.example.org  ",
+    "date_display": 1,
+    "time_style": 1,
+    "ui_chrome": "windowx",
+    "ui_paper": "blackx"
+  },
+  "theme": {
+    "bg": "#000000x",
+    "card": "#111111x",
+    "accent": "#ffffffx",
+    "text": "#ffffffx"
+  },
+  "night": {
+    "mode": 1,
+    "start": "23:00x",
+    "end": "06:00x",
+    "action": 0,
+    "dim_start": "22:00x"
+  },
+  "screens": {
+    "auto_cycle": 0,
+    "interval_sec": 22,
+    "anim_mask": 69,
+    "saver_mask": 22,
+    "show_time": 0,
+    "show_calendar": 0,
+    "show_weather": 0,
+    "show_aqi": 0,
+    "show_daylight": 0,
+    "show_moon": 0,
+    "show_population": 0,
+    "show_pc": 0,
+    "show_media": 0,
+    "show_currency": 0,
+    "show_bambu": 0,
+    "show_flight": 0,
+    "show_saver": 0,
+    "hide_empty_pc": 0,
+    "hide_empty_media": 0,
+    "hide_empty_bambu": 0,
+    "hide_empty_flight": 0,
+    "order": "12,11,10,9,8,7,6,5,4,3,2,1,0"
+  },
+  "calendar": {
+    "start_day": "monx",
+    "minimal": 1
+  },
+  "weather": {
+    "temp_unit": "Cx",
+    "round_temps": 0,
+    "show_header": 1,
+    "custom_sync_min": 6,
+    "values": [
+      "feels",
+      "humidity",
+      "wind",
+      "precipitation",
+      "pressure",
+      "visibility"
+    ]
+  },
+  "aqi": {
+    "type": "USx",
+    "show_header": 1,
+    "custom_sync_min": 6,
+    "values": [
+      "co",
+      "uv"
+    ]
+  },
+  "daylight": {
+    "minimal": 1
+  },
+  "moon": {
+    "minimal": 1
+  },
+  "population": {
+    "show_world": 0,
+    "show_country": 0
+  },
+  "currency": {
+    "fn": 0,
+    "custom_sync_min": 6,
+    "bases": [
+      "gbp",
+      "jpy",
+      "chf"
+    ],
+    "targets": [
+      "usd",
+      "eur",
+      "inr"
+    ],
+    "multipliers": [
+      1,
+      100,
+      10
+    ]
+  },
+  "printer": {
+    "ip": "10.0.0.9",
+    "sn": "SN123",
+    "code": "4321"
+  },
+  "flight": {
+    "mode": "radar",
+    "radius_nm": 40,
+    "units": "metric",
+    "primary_info": "route",
+    "secondary_info": "altitude",
+    "custom_sync_min": 3
+  }
+}

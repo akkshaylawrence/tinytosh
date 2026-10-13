@@ -1,0 +1,10 @@
+{
+  "screens": {
+    "order": "3,1"
+  },
+  "weather": {
+    "values": [
+      "wind"
+    ]
+  }
+}
