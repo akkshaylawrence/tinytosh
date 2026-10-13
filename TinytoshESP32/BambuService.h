@@ -1,6 +1,8 @@
 #ifndef BAMBU_SERVICE_H
 #define BAMBU_SERVICE_H
 
+#include <atomic>
+
 #include <PubSubClient.h>
 #include <WiFiClientSecure.h>
 
@@ -31,10 +33,12 @@ private:
     unsigned long lastReconnectAttempt;
     unsigned long lastMessageTime;
     
-    // Scanner variables
-    bool isScanning;
+    // The scanner task reads scanBaseIp and writes scanFoundIp, then raises scanFound. loop()
+    // touches neither while isScanning is set, and is the only one to change the config.
+    std::atomic<bool> isScanning{false};
+    std::atomic<bool> scanFound{false};
     String scanBaseIp;
-    TaskHandle_t scanTaskHandle;
+    String scanFoundIp;
 
     static BambuService* instance;
     static void mqttCallbackStatic(char* topic, byte* payload, unsigned int length);

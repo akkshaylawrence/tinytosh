@@ -6,9 +6,11 @@
 
 #include "ConfigManager.h"
 
+extern ConfigManager configManager;
+
 BambuService* BambuService::instance = nullptr;
 
-BambuService::BambuService() : lastReconnectAttempt(0), isScanning(false), scanTaskHandle(NULL), lastMessageTime(0) {
+BambuService::BambuService() : lastReconnectAttempt(0), lastMessageTime(0) {
     instance = this;
 }
 
@@ -25,6 +27,12 @@ void BambuService::begin(Config* conf, BambuData* bData) {
 }
 
 void BambuService::loop() {
+    if (!isScanning && scanFound.exchange(false)) {
+        config->bambu_ip = scanFoundIp;
+        lastReconnectAttempt = millis() - BAMBU_RECONNECT_INTERVAL_MS + BAMBU_SCAN_COOLDOWN_MS;
+        configManager.saveConfig(*config);
+    }
+
     if (!config->show_bambu || config->bambu_sn == "") {
         if (client.connected()) {
             client.disconnect();
@@ -111,14 +119,7 @@ void BambuService::startScannerSafely() {
                 isScanning = true;
                 Serial.println("BambuService: Starting background scanner on subnet " + scanBaseIp + "x");
                 
-                xTaskCreate(
-                    BambuService::scanNetworkTask, 
-                    "BambuScanner", 
-                    4096, 
-                    this, 
-                    1, 
-                    &scanTaskHandle
-                );
+                if (xTaskCreate(BambuService::scanNetworkTask, "BambuScanner", 4096, this, 1, NULL) != pdPASS) isScanning = false;
                 return;
             }
         }
@@ -128,10 +129,9 @@ void BambuService::startScannerSafely() {
 
 void BambuService::scanNetworkTask(void* parameter) {
     BambuService* service = (BambuService*)parameter;
+    bool found = false;
 
-    for (int i = 1; i <= 254; i++) {
-        if (!service->isScanning) break;
-
+    for (int i = 1; i <= 254 && !found; i++) {
         String testIp = service->scanBaseIp + String(i);
         if (i % 50 == 0) Serial.println("BambuService: Scanning network... (" + testIp + ")");
 
@@ -139,25 +139,17 @@ void BambuService::scanNetworkTask(void* parameter) {
         if (probeClient.connect(testIp.c_str(), BAMBU_MQTT_PORT, BAMBU_PROBE_SCAN_MS)) {
             probeClient.stop();
             Serial.println("BambuService: 🎉 PRINTER FOUND at " + testIp);
-            service->config->bambu_ip = testIp;
-            service->lastReconnectAttempt = millis() - BAMBU_RECONNECT_INTERVAL_MS + BAMBU_SCAN_COOLDOWN_MS;
-            service->isScanning = false; 
-
-            extern ConfigManager configManager; 
-            configManager.saveConfig(*(service->config));
-
-            break;
+            service->scanFoundIp = testIp;
+            found = true;
+        } else {
+            vTaskDelay(pdMS_TO_TICKS(BAMBU_SCAN_YIELD_MS));
         }
-
-        vTaskDelay(pdMS_TO_TICKS(BAMBU_SCAN_YIELD_MS)); 
     }
 
-    if (service->isScanning) {
-        Serial.println("BambuService: Scan complete. Printer not found on network.");
-    }
-    
+    if (!found) Serial.println("BambuService: Scan complete. Printer not found on network.");
+
+    service->scanFound = found;
     service->isScanning = false;
-    service->scanTaskHandle = NULL;
     vTaskDelete(NULL);
 }
 

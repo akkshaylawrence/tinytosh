@@ -98,6 +98,12 @@ const SyncStep STEP_READY       = {"Tinytosh is Ready", 100};
 }  // namespace
 
 void DataSyncService::runFullSync(AppState& state) {
+    // A background sync still in flight was planned from the settings as they were. Let it end
+    // and drop what it fetched, so it cannot put back data this sync is about to replace.
+    while (jobRunning && !jobFinished) delay(50);
+    jobFinished = false;
+    jobRunning = false;
+
     Config& config = state.config;
     auto announce = [&](const SyncStep& step, const String& detail) {
         displayService.showStartup(config, step.headline, detail, step.percent);
@@ -194,22 +200,55 @@ void DataSyncService::maybeStartBackgroundSync(AppState& state, bool nightModeLa
 
     if (lastFailedAttempt != 0 && (millis() - lastFailedAttempt) < RETRY_BACKOFF_MS) return;
 
-    if (!isBackgroundSyncRunning) {
-        isBackgroundSyncRunning = true;
-        activeState = &state;
-        activeNightModeLatched = nightModeLatched;
+    if (jobRunning) return;
 
-        Serial.println("Spawning background data update task...");
-        xTaskCreate(
-            backgroundSyncTaskTrampoline,
-            "BgUpdateTask",
-            8192,
-            this,
-            1,
-            &backgroundSyncTaskHandle
-        );
+    job.config = state.config;
+    job.nightModeLatched = nightModeLatched;
+    job.dueWeather = isDue(SCREEN_WEATHER, state.config, nightModeLatched);
+    job.dueAqi = isDue(SCREEN_AIR_QUALITY, state.config, nightModeLatched);
+    job.dueFlight = isDue(SCREEN_FLIGHT, state.config, nightModeLatched);
+    job.dueCurrency = isDue(SCREEN_CURRENCY, state.config, nightModeLatched);
+    job.weather = state.weather;
+    job.aqi = state.aqi;
+    job.daylight = state.daylight;
+    job.moon = state.moon;
+    job.population = state.population;
+    job.flight = state.flight;
+    for (int i = 0; i < MAX_MULTI_ENTRIES; i++) job.currencies[i] = state.currencies[i];
+    job.offline = false;
+    job.fetchedDaylight = job.fetchedMoon = job.fetchedPopulation = false;
+
+    jobRunning = true;
+    Serial.println("Spawning background data update task...");
+    if (xTaskCreate(backgroundSyncTaskTrampoline, "BgUpdateTask", 8192, this, 1, NULL) != pdPASS) {
+        Serial.println("Background task could not start. Will retry shortly.");
+        lastFailedAttempt = millis();
+        jobRunning = false;
+    }
+}
+
+void DataSyncService::applyFinishedBackgroundSync(AppState& state) {
+    if (!jobFinished) return;
+
+    if (job.offline) {
+        lastFailedAttempt = millis();
+    } else {
+        if (job.fetchedDaylight) state.daylight = job.daylight;
+        if (job.fetchedMoon) state.moon = job.moon;
+        if (job.fetchedPopulation) state.population = job.population;
+        if (job.dueWeather) { state.weather = job.weather; markFetched(SCREEN_WEATHER); }
+        if (job.dueAqi) { state.aqi = job.aqi; markFetched(SCREEN_AIR_QUALITY); }
+        if (job.dueFlight) { state.flight = job.flight; markFetched(SCREEN_FLIGHT); }
+        if (job.dueCurrency) {
+            for (int i = 0; i < MAX_MULTI_ENTRIES; i++) state.currencies[i] = job.currencies[i];
+            markFetched(SCREEN_CURRENCY);
+        }
+        if (isGlobalSyncDue(state.config, job.nightModeLatched)) markGlobalSynced();
+        lastFailedAttempt = 0;
     }
 
+    jobFinished = false;
+    jobRunning = false;
 }
 
 void DataSyncService::backgroundSyncTaskTrampoline(void* parameter) {
@@ -221,49 +260,39 @@ void DataSyncService::runBackgroundSyncBody() {
 
     if (WiFi.status() != WL_CONNECTED) {
         Serial.println("Background Task: WiFi offline. Will retry shortly.");
-        lastFailedAttempt = millis();
-        isBackgroundSyncRunning = false;
-        backgroundSyncTaskHandle = NULL;
+        job.offline = true;
+        jobFinished = true;
         vTaskDelete(NULL);
         return;
     }
 
-    AppState& state = *activeState;
-    Config& config = state.config;
-    bool nightModeLatched = activeNightModeLatched;
+    const Config& config = job.config;
 
     struct tm timeinfo;
     TimeService::localTime(timeinfo);
     int current_yday = timeinfo.tm_yday;
 
-    // Daily screens are always re-checked here; they no-op internally unless the day rolled over.
-    if (config.show_daylight && state.daylight.last_fetch_yday != current_yday) daylightService.fetchDaylight(config, state.daylight);
-    if (config.show_moon && state.moon.last_fetch_yday != current_yday) moonService.fetchMoon(config, state.moon);
-    if (config.show_population && state.population.last_fetch_yday != current_yday) populationService.fetchPopulation(config, state.population);
-
-    // Custom-sync-eligible screens each check their own due status here.
-    if (isDue(SCREEN_WEATHER, config, nightModeLatched)) {
-        weatherService.fetchWeather(config, state.weather, TimeService::getCurrentTime(config.time_format));
-        markFetched(SCREEN_WEATHER);
+    if (config.show_daylight && job.daylight.last_fetch_yday != current_yday) {
+        daylightService.fetchDaylight(config, job.daylight);
+        job.fetchedDaylight = true;
     }
-    if (isDue(SCREEN_AIR_QUALITY, config, nightModeLatched)) {
-        airQualityService.fetchAirQuality(config, state.aqi);
-        markFetched(SCREEN_AIR_QUALITY);
+    if (config.show_moon && job.moon.last_fetch_yday != current_yday) {
+        moonService.fetchMoon(config, job.moon);
+        job.fetchedMoon = true;
     }
-    if (isDue(SCREEN_FLIGHT, config, nightModeLatched)) {
-        flightService.fetchFlights(config, state.flight);
-        markFetched(SCREEN_FLIGHT);
-    }
-    if (isDue(SCREEN_CURRENCY, config, nightModeLatched)) {
-        for (int i = 0; i < config.currency_count; i++) currencyService.fetchRate(config.currency_bases[i], config.currency_targets[i], state.currencies[i]);
-        markFetched(SCREEN_CURRENCY);
+    if (config.show_population && job.population.last_fetch_yday != current_yday) {
+        populationService.fetchPopulation(config, job.population);
+        job.fetchedPopulation = true;
     }
 
-    if (isGlobalSyncDue(config, nightModeLatched)) markGlobalSynced();
-    lastFailedAttempt = 0;
+    if (job.dueWeather) weatherService.fetchWeather(config, job.weather, TimeService::getCurrentTime(config.time_format));
+    if (job.dueAqi) airQualityService.fetchAirQuality(config, job.aqi);
+    if (job.dueFlight) flightService.fetchFlights(config, job.flight);
+    if (job.dueCurrency) {
+        for (int i = 0; i < config.currency_count; i++) currencyService.fetchRate(config.currency_bases[i], config.currency_targets[i], job.currencies[i]);
+    }
 
     Serial.println("Background Task: Updates complete.");
-    isBackgroundSyncRunning = false;
-    backgroundSyncTaskHandle = NULL;
+    jobFinished = true;
     vTaskDelete(NULL);
 }
