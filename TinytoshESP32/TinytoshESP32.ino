@@ -216,6 +216,7 @@ void loop() {
   }
 
   // 2. Scheduled Data Refresh (Non-Blocking via FreeRTOS Task)
+  dataSyncService.applyFinishedBackgroundSync(appState);
   dataSyncService.maybeStartBackgroundSync(appState, nightModeService.isLatched());
 
   // 3. Auto Screen Switching Logic
