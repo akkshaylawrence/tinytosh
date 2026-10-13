@@ -197,6 +197,8 @@ let currentDeviceId = "";
 let currentDeviceIp = "";
 let statusLockUntil = 0;
 let isLoggingPaused = true;
+// The transports behind the device list, by the label shown for each.
+let portsByLabel = new Map();
 
 // Functions
 function applyLiveTheme() {
@@ -456,15 +458,16 @@ async function loadPorts() {
 
         select.innerHTML = ""; 
         
+        portsByLabel = new Map(statusObj.ports.map(row => [row.label, row.transport]));
         if (statusObj.ports.length === 0) {
             let opt = document.createElement("option");
             opt.text = "No Ports Found";
             select.add(opt);
         } else {
-            statusObj.ports.forEach((p) => {
+            statusObj.ports.forEach((row) => {
                 let opt = document.createElement("option");
-                opt.value = p;
-                opt.text = p;
+                opt.value = row.label;
+                opt.text = row.label;
                 select.add(opt);
             });
         }
@@ -476,7 +479,7 @@ async function loadPorts() {
         }
 
         if (statusObj.connected) {
-            select.value = statusObj.connected;
+            select.value = statusObj.connected.label;
             if (!isConnected) {
                 isConnected = true;
                 if(btn) { btn.innerText = "Disconnect"; btn.className = "btn-secondary"; btn.disabled = false; }
@@ -495,7 +498,7 @@ async function loadPorts() {
                 
                 handleDisconnectUI();
             }
-            if (currentVal && statusObj.ports.includes(currentVal) && !isConnected && !isConnecting) {
+            if (currentVal && portsByLabel.has(currentVal) && !isConnected && !isConnecting) {
                 select.value = currentVal;
             }
         }
@@ -511,9 +514,9 @@ async function loadPorts() {
         const linkStatus = document.getElementById("tinytosh-link-status");
 
         if (ipText && linkStatus) {
-            let activeConn = statusObj.connected || "";
-            
-            if (activeConn.startsWith("Serial:")) {
+            const transport = statusObj.connected ? statusObj.connected.transport : null;
+
+            if (transport && transport.kind === "serial") {
                 if (currentDeviceIp) {
                     ipText.innerText = `TINYTOSH IP: ${currentDeviceIp}`;
                 } else {
@@ -530,25 +533,13 @@ async function loadPorts() {
                 }
             }
 
-            if (isConnected && statusObj.connected) {
-                let target = statusObj.connected;
-
+            if (isConnected && transport) {
                 const logsPanel = document.getElementById("logs-panel");
-                if (logsPanel) {
-                    if (target.startsWith("Serial:")) logsPanel.classList.remove("hidden");
-                    else logsPanel.classList.add("hidden");
-                }
-                
-                if (target.startsWith("WiFi:")) {
-                    let name = target.split(" ")[1]; 
-                    linkStatus.innerText = "🔒 PAIRED TO " + (name ? name.toUpperCase() : "TINYTOSH");
-                    linkStatus.style.color = COLOR_MAIN;
-                } 
-                else if (target.startsWith("Serial:")) {
-                    let devName = currentDeviceId ? currentDeviceId.toUpperCase() : "USB DEVICE";
-                    linkStatus.innerText = "🔒 PAIRED TO " + devName;
-                    linkStatus.style.color = COLOR_MAIN;
-                }
+                if (logsPanel) logsPanel.classList.toggle("hidden", transport.kind !== "serial");
+
+                const pairedTo = transport.kind === "wifi" ? transport.name : currentDeviceId;
+                linkStatus.innerText = "🔒 PAIRED TO " + (pairedTo ? pairedTo.toUpperCase() : transport.kind === "wifi" ? "TINYTOSH" : "USB DEVICE");
+                linkStatus.style.color = COLOR_MAIN;
             } else {
                 linkStatus.innerText = "NOT CONNECTED";
                 linkStatus.style.color = COLOR_MUTED;
@@ -565,8 +556,8 @@ async function toggleConnection() {
     const btn = document.getElementById("conn-btn");
     
     if (!isConnected) {
-        const port = select.value;
-        if (!port || port === "No Ports Found") return;
+        const target = portsByLabel.get(select.value);
+        if (!target) return;
         try {
             const ph = document.getElementById("config-placeholder");
             if(ph && !isConfigLoaded) { ph.innerText = "Attempting connection..."; }
@@ -575,7 +566,7 @@ async function toggleConnection() {
             btn.disabled = true;
             select.disabled = true;
 
-            await invoke("toggle_connection", { portName: port });
+            await invoke("toggle_connection", { target });
         } catch (error) {
             setUiStatus(error, COLOR_MAIN);
             btn.innerText = "Connect";
@@ -584,7 +575,7 @@ async function toggleConnection() {
         }
     } else {
         try {
-            await invoke("toggle_connection", { portName: "" });
+            await invoke("toggle_connection", { target: null });
             isConnected = false;
             btn.innerText = "Connect"; 
             btn.className = "btn-secondary";
