@@ -187,7 +187,7 @@ struct WeatherData {
   float wind_speed = NAN;
   int humidity = 0;
   int weather_code = -1;
-  bool is_day = NAN;
+  bool is_day = true;
   float precipitation_probability = NAN;
   float pressure = NAN;
   float visibility = NAN;

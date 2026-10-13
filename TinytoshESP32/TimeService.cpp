@@ -92,13 +92,13 @@ void TimeService::syncNTP(const String& ianaTimezone, const String& ntpServer) {
   int retryCount = 0;
   // SNTP starts up to 5s late and gives each server 15s before trying the next, so the fallback needs a longer wait.
   const int maxRetries = customNtpServer[0] != '\0' ? 50 : 20;
-  while (now < 1672531200L && retryCount < maxRetries) { 
+  while (now <= SYNCED_AFTER_EPOCH && retryCount < maxRetries) { 
     delay(500);
     now = time(nullptr);
     retryCount++;
   }
 
-  if (now > 1672531200L) { 
+  if (now > SYNCED_AFTER_EPOCH) { 
     struct tm timeinfo;
     localtime_r(&now, &timeinfo);
     
@@ -109,6 +109,12 @@ void TimeService::syncNTP(const String& ianaTimezone, const String& ntpServer) {
   } else {
     Serial.println("TimeService: NTP time sync failed or timed out.");
   }
+}
+
+bool TimeService::localTime(struct tm& out) {
+  time_t now = time(nullptr);
+  localtime_r(&now, &out);
+  return now > SYNCED_AFTER_EPOCH;
 }
 
 String TimeService::getCurrentTimeShort(String format) {
@@ -141,7 +147,7 @@ String TimeService::getCurrentTime(String format) {
 
 String TimeService::getFullDate() {
   struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) return "No Date";
+  if (!localTime(timeinfo)) return "No Date";
   
   char buffer[32];
   strftime(buffer, sizeof(buffer), "%A, %b %d", &timeinfo);
@@ -235,7 +241,7 @@ int TimeService::getActiveNightAction(const Config& config) {
   if (!config.night_mode) return -1;
 
   struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) return -1;
+  if (!localTime(timeinfo)) return -1;
   int currentMins = timeinfo.tm_hour * 60 + timeinfo.tm_min;
 
   if (config.night_action == 3) {

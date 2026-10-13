@@ -116,7 +116,7 @@ void DataSyncService::runFullSync(AppState& state) {
     timeService.syncNTP(config.timezone, config.ntp_server);
 
     struct tm timeinfo;
-    getLocalTime(&timeinfo);
+    TimeService::localTime(timeinfo);
     int current_yday = timeinfo.tm_yday;
 
     // 4. Fetch Weather (Depends on Lat/Lon)
@@ -233,7 +233,7 @@ void DataSyncService::runBackgroundSyncBody() {
     bool nightModeLatched = activeNightModeLatched;
 
     struct tm timeinfo;
-    getLocalTime(&timeinfo);
+    TimeService::localTime(timeinfo);
     int current_yday = timeinfo.tm_yday;
 
     // Daily screens are always re-checked here; they no-op internally unless the day rolled over.
