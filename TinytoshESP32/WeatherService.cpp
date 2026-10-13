@@ -27,10 +27,6 @@ String WeatherService::getWeatherIcon(int wmo_code) {
   return "❓";
 }
 
-bool WeatherService::isWeatherValid(const WeatherData& data) {
-    return !isnan(data.temp) && data.weather_code != -1;
-}
-
 bool WeatherService::weatherValueSelected(const Config& config, const char* key) {
     for (int i = 0; i < 6; i++) {
         if (config.weather_values[i] == key) return true;

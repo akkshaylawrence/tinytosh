@@ -32,7 +32,7 @@ const char* PREF_NAMESPACE = "tinytosh_config";
 AppState appState;
 
 // Forward declarations of callbacks
-void updateAllDataCallback();
+void updateAllData();
 void handleSingleClick();
 void handleDoubleClick();
 void handleLongPress();
@@ -40,7 +40,7 @@ void handleLongPress();
 // Service Instances
 ConfigManager configManager(PREF_NAMESPACE);
 DisplayService displayService(128, 64, -1);
-WebServerService webServerService(80, updateAllDataCallback);
+WebServerService webServerService(80, updateAllData);
 HardwareService hardwareService(handleSingleClick, handleDoubleClick, handleLongPress);
 TimeService timeService;
 WeatherService weatherService;
@@ -120,11 +120,6 @@ void updateAllData() {
   dataSyncService.runFullSync(appState);
   displayService.jumpToFirstEnabledScreen(appState);
   lastScreenSwitch = millis();
-}
-
-// Global function wrapper for the class method
-void updateAllDataCallback() {
-  updateAllData();
 }
 
 void setup() {

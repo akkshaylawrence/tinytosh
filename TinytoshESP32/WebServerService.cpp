@@ -2,6 +2,7 @@
 
 #include <ArduinoJson.h>
 #include <ESPmDNS.h>
+#include <WiFi.h>
 
 #include "JsonSerializer.h"
 #include "SaverScenes.h"
