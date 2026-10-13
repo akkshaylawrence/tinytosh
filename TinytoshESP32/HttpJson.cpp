@@ -7,7 +7,17 @@ static DeserializationError parse(JsonDocument& doc, Source& source, const JsonD
     return filter ? deserializeJson(doc, source, DeserializationOption::Filter(*filter)) : deserializeJson(doc, source);
 }
 
+// A TLS session holds two 16 KB buffers and its handshake state. Measured on an ESP32-C3: a
+// handshake started with 48 KB free ran the heap down to 16 bytes and then failed, slowly, and
+// with nothing left for WiFi or the web server in the meantime. Refusing up front costs nothing.
+static const uint32_t TLS_MIN_FREE_HEAP = 56 * 1024;
+
 DynamicJsonDocument fetchJson(const char* tag, const String& url, size_t capacity, const HttpJsonOptions& options) {
+    if (url.startsWith("https") && ESP.getFreeHeap() < TLS_MIN_FREE_HEAP) {
+        Serial.printf("%s: Skipped, %u bytes free is too little for HTTPS.\n", tag, (unsigned)ESP.getFreeHeap());
+        return DynamicJsonDocument(0);
+    }
+
     HTTPClient http;
     http.setReuse(false);
     http.begin(url);
@@ -25,7 +35,6 @@ DynamicJsonDocument fetchJson(const char* tag, const String& url, size_t capacit
         httpCode = http.GET();
     }
     if (httpCode != HTTP_CODE_OK) {
-        // A failed connect is most often a TLS handshake that ran out of memory.
         Serial.printf("%s: HTTP request failed, code: %d (free heap %u, largest block %u)\n", tag, httpCode,
                       (unsigned)ESP.getFreeHeap(), (unsigned)ESP.getMaxAllocHeap());
         http.end();
