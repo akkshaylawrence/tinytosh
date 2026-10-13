@@ -5,6 +5,7 @@
 #include <WiFi.h>
 
 #include "JsonSerializer.h"
+#include "PcMonitorService.h"
 #include "SaverScenes.h"
 #include "TimeService.h"
 #include "WeatherService.h"
@@ -1345,24 +1346,8 @@ void WebServerService::handlePcStats() {
 
   if (millis() - state->pc.last_update > PC_DATA_TIMEOUT_MS || state->config.active_pc_id == incoming_pc_id || state->config.active_pc_id == "") {
     
-    state->config.active_pc_id = incoming_pc_id;
-    
-    state->pc.cpu_percent = doc["cpu_percent"] | 0.0;
-    state->pc.mem_percent = doc["mem_percent"] | 0.0;
-    state->pc.disk_percent = doc["disk_percent"] | 0.0;
-    state->pc.net_down_kb = doc["net_down_kb"] | 0.0;
-    
-    state->pc.last_update = millis();
-    state->pc.is_wifi = true;
-
-    state->media.status = doc["media_status"] | "stopped";
-    state->media.name = doc["media_name"] | "";
-    state->media.author = doc["media_author"] | "";
-    state->media.album = doc["media_album"] | "";
-    state->media.last_update = millis();
-
     String reply = "{\"status\":\"ok\"";
-    if (JsonSerializer::parsePresence(doc, *state)) reply += ",\"presence\":" + JsonSerializer::buildPresenceJson(state->presence);
+    if (PcMonitorService::applyStats(doc, *state, true)) reply += ",\"presence\":" + JsonSerializer::buildPresenceJson(state->presence);
     server.send(HTTP_OK, "application/json", reply + "}");
   } else {
     server.send(HTTP_FORBIDDEN, "application/json", "{\"status\":\"error\", \"message\":\"Device is already paired to another PC\"}");

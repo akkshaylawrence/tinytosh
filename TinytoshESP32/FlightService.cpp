@@ -1,8 +1,9 @@
 #include "FlightService.h"
 
 #include <ArduinoJson.h>
-#include <HTTPClient.h>
 #include <math.h>
+
+#include "HttpJson.h"
 
 bool FlightService::fetchFlights(const Config& config, FlightData& data) {
     if (config.flight_mode == "closest") {
@@ -61,21 +62,6 @@ bool FlightService::fetchNearbyAircraft(const Config& config, FlightAircraft* ou
 
     Serial.println("FlightService: Fetching nearby aircraft from ADSB.lol (radius " + String(config.flight_radius_nm) + "nm) -> " + url);
 
-    HTTPClient http;
-    http.setReuse(false);
-    http.begin(url);
-    http.setUserAgent(USER_AGENT);
-    http.setConnectTimeout(HTTP_TIMEOUT_MS);
-    http.setTimeout(HTTP_TIMEOUT_MS);
-    int httpCode = http.GET();
-
-    if (httpCode != HTTP_CODE_OK) {
-        Serial.printf("FlightService: ADSB.lol request failed, code: %d\n", httpCode);
-        Serial.println("FlightService: Response body: " + http.getString());
-        http.end();
-        return false;
-    }
-
     DynamicJsonDocument filter(256);
     JsonArray acFilterArr = filter.createNestedArray("ac");
     JsonObject acFilterTmpl = acFilterArr.createNestedObject();
@@ -90,14 +76,13 @@ bool FlightService::fetchNearbyAircraft(const Config& config, FlightAircraft* ou
     acFilterTmpl["t"] = true;
     acFilterTmpl["squawk"] = true;
 
-    DynamicJsonDocument doc(24576);
-    DeserializationError error = deserializeJson(doc, http.getStream(), DeserializationOption::Filter(filter));
-    http.end();
-
-    if (error) {
-        Serial.printf("FlightService: JSON parsing failed: %s\n", error.c_str());
-        return false;
-    }
+    HttpJsonOptions options;
+    options.timeoutMs = HTTP_TIMEOUT_MS;
+    options.stream = true;
+    options.userAgent = USER_AGENT;
+    options.filter = &filter;
+    DynamicJsonDocument doc = fetchJson("FlightService", url, 24576, options);
+    if (doc.isNull()) return false;
 
     JsonArray acArr = doc["ac"].as<JsonArray>();
     if (acArr.isNull()) {
@@ -172,31 +157,14 @@ void FlightService::fetchRoutes(FlightAircraft* aircraft, int count, String* out
 
     Serial.println("FlightService: Looking up routes for " + String(planes.size()) + " aircraft -> " + String(ADSBLOL_ROUTE_URL) + " (" + payload + ")");
 
-    HTTPClient http;
-    http.setReuse(false);
-    http.begin(ADSBLOL_ROUTE_URL);
-    http.setUserAgent(USER_AGENT);
-    http.addHeader("Content-Type", HEADER_JSON);
-    http.addHeader("Accept", HEADER_JSON);
-    http.addHeader("Referer", HEADER_REFERER);
-    http.setConnectTimeout(HTTP_TIMEOUT_MS);
-    http.setTimeout(HTTP_TIMEOUT_MS);
-    int httpCode = http.POST(payload);
-
-    if (httpCode != HTTP_CODE_OK) {
-        Serial.printf("FlightService: Route lookup failed, code: %d\n", httpCode);
-        Serial.println("FlightService: Response body: " + http.getString());
-        http.end();
-        return;
-    }
-
-    DynamicJsonDocument doc(8192);
-    DeserializationError error = deserializeJson(doc, http.getStream());
-    http.end();
-    if (error) {
-        Serial.printf("FlightService: Route JSON parsing failed: %s\n", error.c_str());
-        return;
-    }
+    HttpJsonOptions options;
+    options.timeoutMs = HTTP_TIMEOUT_MS;
+    options.stream = true;
+    options.userAgent = USER_AGENT;
+    options.referer = HEADER_REFERER;
+    options.postBody = &payload;
+    DynamicJsonDocument doc = fetchJson("FlightService", ADSBLOL_ROUTE_URL, 8192, options);
+    if (doc.isNull()) return;
 
     JsonArray routes = doc.as<JsonArray>();
     if (routes.isNull()) return;
@@ -256,31 +224,11 @@ void FlightService::fetchAircraftDetails(const String& icao24, String& outManufa
     String url = String(ADSBDB_AIRCRAFT_URL) + icao24;
     Serial.println("FlightService: Fetching aircraft metadata from ADSBDB -> " + url);
 
-    HTTPClient http;
-    http.setReuse(false);
-    http.begin(url);
-    http.setConnectTimeout(HTTP_TIMEOUT_MS);
-    http.setTimeout(HTTP_TIMEOUT_MS);
-    int httpCode = http.GET();
-
-    if (httpCode == HTTP_CODE_NOT_FOUND) {
-        Serial.println("FlightService: No ADSBDB aircraft info found.");
-        http.end();
-        return;
-    }
-    if (httpCode != HTTP_CODE_OK) {
-        Serial.printf("FlightService: ADSBDB request failed, code: %d\n", httpCode);
-        http.end();
-        return;
-    }
-
-    DynamicJsonDocument doc(1024);
-    DeserializationError error = deserializeJson(doc, http.getStream());
-    http.end();
-    if (error) {
-        Serial.printf("FlightService: ADSBDB JSON parsing failed: %s\n", error.c_str());
-        return;
-    }
+    HttpJsonOptions options;
+    options.timeoutMs = HTTP_TIMEOUT_MS;
+    options.stream = true;
+    DynamicJsonDocument doc = fetchJson("FlightService", url, 1024, options);
+    if (doc.isNull()) return;
 
     JsonObject aircraft = doc["response"]["aircraft"];
     if (aircraft.isNull()) {

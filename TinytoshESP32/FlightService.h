@@ -15,7 +15,6 @@ private:
     static constexpr const char* ADSBDB_AIRCRAFT_URL = "https://api.adsbdb.com/v0/aircraft/";
 
     static constexpr const char* USER_AGENT = "Tinytosh/1.0";
-    static constexpr const char* HEADER_JSON = "application/json";
     static constexpr const char* HEADER_REFERER = "https://api.adsb.lol/docs";
 
     static constexpr float EARTH_RADIUS_KM = 6371.0;

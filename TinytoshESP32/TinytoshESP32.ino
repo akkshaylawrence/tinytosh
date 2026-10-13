@@ -21,7 +21,9 @@
 #include "WeatherService.h"
 #include "WebServerService.h"
 
-SET_LOOP_TASK_STACK_SIZE(16 * 1024);
+// loop() has been measured using under 7 KB of this, a full sync over TLS included. Every
+// kilobyte here comes out of the heap a TLS handshake needs once Bluetooth is running.
+SET_LOOP_TASK_STACK_SIZE(12 * 1024);
 
 // Global Constants
 const char* AP_SSID = "Tinytosh";
@@ -126,6 +128,8 @@ void setup() {
   Serial.setRxBufferSize(1024);
   Serial.begin(115200);
   delay(100);
+
+  dataSyncService.begin();
 
   configManager.loadConfig(appState.config);
   hardwareService.begin(appState.config);

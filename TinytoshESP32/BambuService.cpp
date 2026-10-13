@@ -22,7 +22,6 @@ void BambuService::begin(Config* conf, BambuData* bData) {
     espClient.setHandshakeTimeout(BAMBU_TLS_TIMEOUT_SEC); 
     
     client.setClient(espClient);
-    client.setBufferSize(BAMBU_BUFFER_SIZE); 
     client.setCallback(BambuService::mqttCallbackStatic);
 }
 
@@ -83,6 +82,8 @@ void BambuService::loop() {
 
             Serial.println("BambuService: Printer answered at " + config->bambu_ip + "! Negotiating TLS...");
             client.setServer(config->bambu_ip.c_str(), BAMBU_MQTT_PORT);
+            // Taken only now, so a device with no printer keeps these 8 KB for its HTTPS fetches.
+            client.setBufferSize(BAMBU_BUFFER_SIZE);
             
             if (client.connect("TinytoshClient", "bblp", config->bambu_code.c_str())) {
                 Serial.println("BambuService: Connected!");
@@ -158,11 +159,8 @@ void BambuService::mqttCallbackStatic(char* topic, byte* payload, unsigned int l
 }
 
 void BambuService::mqttCallback(char* topic, byte* payload, unsigned int length) {
-    String message;
-    for (int i = 0; i < length; i++) message += (char)payload[i];
-
     DynamicJsonDocument doc(BAMBU_JSON_DOC_SIZE);
-    DeserializationError error = deserializeJson(doc, message);
+    DeserializationError error = deserializeJson(doc, payload, length);
 
     if (error) {
         Serial.print("BambuService JSON Parse failed: ");

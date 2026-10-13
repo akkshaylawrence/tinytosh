@@ -8,6 +8,7 @@ cd "$(dirname "$0")/.."
 (cd TinytoshPC/src-tauri && cargo clippy --all-targets -- -D warnings && cargo test)
 sh tools/ui-harness/run.sh
 sh tools/presence-harness/run.sh
+sh tools/config-harness/run.sh
 sh tools/dead-symbols.sh
 
 if [ "$1" != "--no-firmware" ]; then

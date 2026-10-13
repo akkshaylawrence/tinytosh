@@ -32,6 +32,9 @@ struct SyncJob {
 
 class DataSyncService {
 public:
+    // Starts the task that runs background syncs. Call it early in setup(): the task's stack
+    // then sits low in the heap, and the large free block a TLS handshake needs stays whole.
+    void begin();
     bool isGlobalSyncDue(const Config& config, bool nightModeLatched) const;
     void markGlobalSynced();
     bool isDue(ScreenType screen, const Config& config, bool nightModeLatched) const;
@@ -47,17 +50,18 @@ private:
 
     FetchTrackers trackers;
 
-    // The task owns job from the moment it is created until it sets jobFinished.
+    // The task owns job from the moment it is woken until it sets jobFinished.
     SyncJob job;
+    TaskHandle_t worker = NULL;
     std::atomic<bool> jobRunning{false};
     std::atomic<bool> jobFinished{false};
     unsigned long lastFailedAttempt = 0;
 
-    unsigned long getGlobalIntervalMs(const Config& config, bool nightModeLatched) const;
+    static unsigned long intervalMs(unsigned long minutes, bool nightModeLatched);
     bool isFetchDue(unsigned long lastFetch, int customMin, const Config& config, bool nightModeLatched) const;
 
-    static void backgroundSyncTaskTrampoline(void* parameter);
-    void runBackgroundSyncBody();
+    static void workerEntry(void* parameter);
+    void runJob();
 };
 
 #endif

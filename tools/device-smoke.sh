@@ -3,7 +3,7 @@
 # Usage: tools/device-smoke.sh <serial-port> <ip> [--no-flash]
 #
 # Quit the PC App first: it holds the serial port, and the device answers one PC at a time.
-# The saved settings survive the flash. One of them is changed and put back.
+# The saved settings survive the flash. A few are changed and put back.
 set -e
 PORT="$1"
 IP="$2"
@@ -15,14 +15,14 @@ if [ "$3" != "--no-flash" ]; then
 fi
 
 exec python3 - "$PORT" "$IP" "$3" <<'EOF'
-import json, os, sys, termios, time, urllib.request
+import fcntl, json, os, struct, sys, termios, time, urllib.request
 
 port, ip, flashed = sys.argv[1], sys.argv[2], sys.argv[3] != "--no-flash"
 
 def call(path, body=None):
     data = None if body is None else json.dumps(body).encode()
     request = urllib.request.Request(f"http://{ip}{path}", data=data, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(request, timeout=60) as reply:
+    with urllib.request.urlopen(request, timeout=180) as reply:
         return reply.read().decode()
 
 def state():
@@ -53,6 +53,25 @@ check(state()["config"]["screens"]["interval_sec"] == changed, "a saved setting 
 call("/save", {"screens": {"interval_sec": before}})
 check(state()["config"]["screens"]["interval_sec"] == before, "the setting is put back")
 
+# A save runs a full sync, so turning every data screen on fetches from every source. Flights
+# are left out: an empty sky is a valid answer. One source may be missing, because these are
+# other people's servers. With the Bluetooth mouse on there is too little memory left for HTTPS
+# after boot and none of this can pass, so it is skipped.
+sources = {"show_weather": "weather", "show_aqi": "aqi", "show_daylight": "daylight", "show_moon": "moon",
+           "show_population": "population", "show_currency": "currency"}
+if booted["config"]["hardware"]["presence_ble"]:
+    print("skip  data sources: the Bluetooth mouse is on", flush=True)
+else:
+    shown = {key: booted["config"]["screens"][key] for key in sources}
+    call("/save", {"screens": {key: 1 for key in sources}})
+    status = state()["status"]
+    call("/save", {"screens": shown})
+    fetched = {name: name in status for name in sources.values()}
+    fetched["weather"] = "temp" in status.get("weather", {})
+    fetched["currency"] = bool(status.get("currency", {}).get("data"))
+    missing = [name for name, ok in fetched.items() if not ok]
+    check(len(missing) <= 1, f"data sources fetched (missing: {', '.join(missing) or 'none'})")
+
 stats = {"pc_id": "smoke-test:1", "cpu_percent": 12.5, "mem_percent": 40, "disk_percent": 50, "net_down_kb": 3,
          "media_status": "stopped", "media_name": "", "media_author": "", "media_album": "",
          "presence": {"session": 1, "lease": False, "lease_ms": 0, "paused": True, "profile": 2,
@@ -63,9 +82,12 @@ check(reply.get("status") == "ok" and "link" in reply.get("presence", {}), "/pc-
 fd = os.open(port, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
 attrs = termios.tcgetattr(fd)
 attrs[0], attrs[1], attrs[3] = 0, 0, 0
-attrs[2] = termios.CS8 | termios.CREAD | termios.CLOCAL
+attrs[2] = (termios.CS8 | termios.CREAD | termios.CLOCAL) & ~termios.HUPCL
 attrs[4] = attrs[5] = termios.B115200
 termios.tcsetattr(fd, termios.TCSANOW, attrs)
+# See tools/device-log.sh for why the control lines are lowered in this order.
+fcntl.ioctl(fd, termios.TIOCMBIC, struct.pack("I", termios.TIOCM_RTS))
+fcntl.ioctl(fd, termios.TIOCMBIC, struct.pack("I", termios.TIOCM_DTR))
 os.write(fd, b"GET_UPDATE\n")
 received, deadline = b"", time.time() + 10
 while b"SYS_UPDATE:" not in received and time.time() < deadline:
