@@ -319,11 +319,11 @@ fn main() {
             let is_minimized = args.contains(&"--minimized".to_string());
 
             #[cfg(target_os = "macos")]
-            if is_minimized {
-                let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+            app.set_activation_policy(if is_minimized {
+                tauri::ActivationPolicy::Accessory
             } else {
-                let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
-            }
+                tauri::ActivationPolicy::Regular
+            });
 
             presence::start(app.handle());
 
@@ -546,10 +546,9 @@ fn main() {
                 }
             });
 
-            let args: Vec<String> = env::args().collect();
-            if !args.contains(&"--minimized".to_string()) {
+            if !is_minimized {
                 if let Some(w) = app.get_webview_window("main") { 
-                    show_window_safely(&app.handle(), w); 
+                    show_window_safely(app.handle(), w); 
                 }
             }
 
@@ -594,7 +593,7 @@ fn main() {
                         .map(|d| (d.total_space() - d.available_space()) * 100 / d.total_space())
                         .unwrap_or(0);
 
-                    let total_rx_bytes: u64 = networks.iter().map(|(_, n)| n.received()).sum();
+                    let total_rx_bytes: u64 = networks.values().map(|n| n.received()).sum();
                     let download_kb = total_rx_bytes / 1024; 
 
                     let local_media = state.media_info.lock().unwrap().clone();
@@ -733,8 +732,8 @@ fn main() {
                                 let mut buf = state.serial_buffer.lock().unwrap();
                                 while let Some(newline_offset) = buf.find('\n') {
                                     let line = buf[..newline_offset].trim().to_string();
-                                    if line.starts_with("SYS_UPDATE:") {
-                                        *state.latest_config.lock().unwrap() = line[11..].to_string();
+                                    if let Some(config) = line.strip_prefix("SYS_UPDATE:") {
+                                        *state.latest_config.lock().unwrap() = config.to_string();
                                         handshake_success = true; 
                                     } else if let Some(json) = line.strip_prefix("PRESENCE:") {
                                         state.presence.lock().unwrap().receive(json);
@@ -795,11 +794,8 @@ fn main() {
                                 Err(ureq::Error::Status(403, _)) => {
                                     *state.status_msg.lock().unwrap() = "❌ Device already paired".to_string();
                                     state.discovered_wifi.lock().unwrap().remove(ip);
-                                    test_ticks = 99; 
                                 }
-                                Err(_) => { 
-                                    test_ticks = 99; 
-                                } 
+                                Err(_) => {}
                             }
 
                             if phase != AppPhase::ConnectedWifi {
@@ -847,8 +843,8 @@ fn main() {
                                     let mut buf = state.serial_buffer.lock().unwrap();
                                     while let Some(newline_offset) = buf.find('\n') {
                                         let line = buf[..newline_offset].trim().to_string();
-                                        if line.starts_with("SYS_UPDATE:") {
-                                            *state.latest_config.lock().unwrap() = line[11..].to_string();
+                                        if let Some(config) = line.strip_prefix("SYS_UPDATE:") {
+                                            *state.latest_config.lock().unwrap() = config.to_string();
                                         } else if let Some(json) = line.strip_prefix("PRESENCE:") {
                                             state.presence.lock().unwrap().receive(json);
                                         } else if !line.is_empty() && log_enabled {

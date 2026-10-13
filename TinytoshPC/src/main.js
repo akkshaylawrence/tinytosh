@@ -15,10 +15,8 @@ const POST_SAVE_SYNC_DELAY_MS = 1000;
 const BUTTON_RESET_DELAY_MS = 3000;        
 
 // UI Colors
-const COLOR_SUCCESS = "var(--text-main)";          
-const COLOR_INFO = "var(--text-main)";             
-const COLOR_ERROR = "var(--text-main)";            
-const COLOR_MUTED = "var(--text-muted)";     
+const COLOR_MAIN = "var(--text-main)";
+const COLOR_MUTED = "var(--text-muted)";
 
 const countryGreetings = {
   "BY": "Жыве Беларусь ⚪🔴⚪",
@@ -385,9 +383,7 @@ async function updateStats() {
                 const statusText = hasValidMedia ? (data.media_status || "stopped") : "stopped"; 
                 mStatus.innerText = statusText.toUpperCase();
                 
-                if (statusText === "playing") mStatus.style.color = COLOR_SUCCESS; 
-                else if (statusText === "paused") mStatus.style.color = COLOR_INFO; 
-                else mStatus.style.color = COLOR_MUTED; 
+                mStatus.style.color = ["playing", "paused"].includes(statusText) ? COLOR_MAIN : COLOR_MUTED;
             }
             
             if (mName) {
@@ -506,17 +502,9 @@ async function loadPorts() {
 
         if (statusObj.status_text) {
             const lowerText = statusObj.status_text.toLowerCase();
-            if (lowerText.includes("failed") || lowerText.includes("error") || lowerText.includes("❌")) {
-                setUiStatus(statusObj.status_text, COLOR_ERROR); 
-            } else if (lowerText.includes("connecting to")) {
-                setUiStatus(statusObj.status_text, COLOR_MUTED);
-            } else if (lowerText.includes("wifi")) {
-                setUiStatus(statusObj.status_text, COLOR_INFO); 
-            } else if (lowerText.includes("usb")) {
-                setUiStatus(statusObj.status_text, COLOR_SUCCESS); 
-            } else {
-                setUiStatus(statusObj.status_text, COLOR_MUTED);    
-            }
+            const isFailure = ["failed", "error", "❌"].some(word => lowerText.includes(word));
+            const isLinked = !lowerText.includes("connecting to") && (lowerText.includes("wifi") || lowerText.includes("usb"));
+            setUiStatus(statusObj.status_text, isFailure || isLinked ? COLOR_MAIN : COLOR_MUTED);
         }
 
         const ipText = document.getElementById("device-ip-text");
@@ -554,13 +542,12 @@ async function loadPorts() {
                 if (target.startsWith("WiFi:")) {
                     let name = target.split(" ")[1]; 
                     linkStatus.innerText = "🔒 PAIRED TO " + (name ? name.toUpperCase() : "TINYTOSH");
-                    linkStatus.style.color = COLOR_SUCCESS;
+                    linkStatus.style.color = COLOR_MAIN;
                 } 
                 else if (target.startsWith("Serial:")) {
-                    let port = target.replace("Serial: ", "");
                     let devName = currentDeviceId ? currentDeviceId.toUpperCase() : "USB DEVICE";
                     linkStatus.innerText = "🔒 PAIRED TO " + devName;
-                    linkStatus.style.color = COLOR_SUCCESS;
+                    linkStatus.style.color = COLOR_MAIN;
                 }
             } else {
                 linkStatus.innerText = "NOT CONNECTED";
@@ -590,7 +577,7 @@ async function toggleConnection() {
 
             await invoke("toggle_connection", { portName: port });
         } catch (error) {
-            setUiStatus(error, COLOR_ERROR);
+            setUiStatus(error, COLOR_MAIN);
             btn.innerText = "Connect";
             btn.disabled = false;
             select.disabled = false;
@@ -1323,7 +1310,7 @@ window.addEventListener("DOMContentLoaded", () => {
             await invoke("save_device_settings", { jsonPayload: jsonPayload });
             
             saveBtn.innerText = "✅ Saved Successfully!";
-            saveBtn.style.backgroundColor = COLOR_SUCCESS;
+            saveBtn.style.backgroundColor = COLOR_MAIN;
             formDirty = false;
             setTimeout(fetchDeviceData, POST_SAVE_SYNC_DELAY_MS);
             
@@ -1331,7 +1318,7 @@ window.addEventListener("DOMContentLoaded", () => {
             console.error("Save Error:", err);
             alert("Backend Error: " + err); 
             saveBtn.innerText = "❌ Failed to Save";
-            saveBtn.style.backgroundColor = COLOR_ERROR;
+            saveBtn.style.backgroundColor = COLOR_MAIN;
         }
 
         setTimeout(() => {
