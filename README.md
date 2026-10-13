@@ -78,6 +78,9 @@ The firmware is designed to be **non-blocking** and **modular**.
 * **🔐 Hardware Pairing Lock:** Telemetry streams are protected. Tinytosh securely pairs to the active PC to ensure multiple computers on the same network don't fight over the display.
 * **🧰 UI Library & Screen Registry:** `Ui.h` draws the Mac frame, fonts and widgets, and gives every screen the same 124x52 canvas. Each screen is one `Screen*.cpp` file plus one row in the `SCREENS` table in `Screens.cpp`, so adding a screen touches no navigation or rendering code. `tools/ui-harness/run.sh` draws every screen in every style on your computer and fails if a pixel leaves the panel.
 * **🖱️ Presence Engine:** `PresenceEngine` plans minimum-jerk strokes inside a ±75 x ±50 px box and holds no clock, radio or random source of its own, so `tools/presence-harness/run.sh` runs it on your computer against a fake clock. `PresenceService` runs it on its own task over a BLE HID mouse. It moves only while the PC App keeps renewing a short lease, which travels with every stats message.
+* **🪞 One Settings Page:** The Web Panel is the PC App's page. `TinytoshPC/src` runs in both places, and `tools/build-web-panel.sh` packs it into `TinytoshESP32/WebPanel.h`, which the firmware serves as is. Run that script after changing the page.
+* **🧾 One Settings Table:** `CONFIG_FIELDS` in `JsonSerializer.cpp` lists each setting once, as its JSON key and the `Config` member behind it. A new setting is one row there, one line in `tools/config-harness/fixtures/saved.json`, and its form field.
+* **🧪 Checks:** `tools/check.sh` runs everything that needs no device: the PC App's lints and tests, the three host harnesses, the unused-symbol scan, the Web Panel freshness check, and a firmware compile. With a device attached, `tools/device-smoke.sh` flashes it and checks the web panel, a settings round trip and the serial link, `tools/device-stress.sh` loads it and fails on a reboot, and `tools/device-log.sh` prints its serial log.
 * **🖼️ Dynamic Rendering:** The `DisplayService` handles the OLED. It supports "partial screen buffering," allowing for complex transition effects (like dissolving pixels or sliding curtains) without needing a massive frame buffer.
 
 #### 🏗️ Build & Compile Guide
@@ -139,7 +142,7 @@ lib_deps =
 * `ESPmDNS.h`
 * `BLEDevice.h` & `BLEHIDDevice.h` (Bluetooth mouse)
 
-> ⚠️ **Partition Scheme:** The firmware is about 1.9 MB, which is larger than the default 1.2 MB app slot. In the Arduino IDE choose **Tools → Partition Scheme → Huge APP (3MB No OTA/1MB SPIFFS)** before compiling, or the build stops with *"text section exceeds available space in board"*. Tinytosh keeps its settings in NVS and does not use OTA updates or a filesystem, so nothing is lost. The PlatformIO config above already sets this with `board_build.partitions`. To rebuild the web installer image from the command line, run `tools/build-firmware.sh`.
+> ⚠️ **Partition Scheme:** The firmware is about 1.8 MB, which is larger than the default 1.2 MB app slot. In the Arduino IDE choose **Tools → Partition Scheme → Huge APP (3MB No OTA/1MB SPIFFS)** before compiling, or the build stops with *"text section exceeds available space in board"*. Tinytosh keeps its settings in NVS and does not use OTA updates or a filesystem, so nothing is lost. The PlatformIO config above already sets this with `board_build.partitions`. To rebuild the web installer image from the command line, run `tools/build-firmware.sh`.
 
 ### 2. PC Bridge App (Desktop)
 *Written in Rust 🦀 & Tauri.*

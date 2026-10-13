@@ -48,6 +48,8 @@ body {
 
 /* Utilities */
 .mt-0 { margin-top: 0 !important; } .mt-25 { margin-top: 25px; } .mb-20 { margin-bottom: 20px; } .hidden { display: none !important; }
+/* The same page is the PC app's window and the device's own web panel. */
+body.web .pc-only, body:not(.web) .web-only { display: none !important; }
 hr { border: 0; border-top: 1px solid var(--border-subtle); margin: 20px 0; }
 
 /* OLED Hardware Shapes */

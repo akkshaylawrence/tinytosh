@@ -12,10 +12,13 @@ cd "$(dirname "$0")/.."
 
 if [ "$3" != "--no-flash" ]; then
   arduino-cli compile --fqbn esp32:esp32:XIAO_ESP32C3:PartitionScheme=huge_app --upload --port "$PORT" TinytoshESP32
+  # The boot that follows an upload has twice failed to join WiFi and sat in its setup portal.
+  # A plain restart has joined every time.
+  sh tools/device-log.sh "$PORT" 1 --reset > /dev/null
 fi
 
 exec python3 - "$PORT" "$IP" "$3" <<'EOF'
-import fcntl, json, os, struct, sys, termios, time, urllib.request
+import fcntl, gzip, json, os, struct, sys, termios, time, urllib.request
 
 port, ip, flashed = sys.argv[1], sys.argv[2], sys.argv[3] != "--no-flash"
 
@@ -23,7 +26,8 @@ def call(path, body=None):
     data = None if body is None else json.dumps(body).encode()
     request = urllib.request.Request(f"http://{ip}{path}", data=data, headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(request, timeout=180) as reply:
-        return reply.read().decode()
+        raw = reply.read()
+        return (gzip.decompress(raw) if reply.headers.get("Content-Encoding") == "gzip" else raw).decode()
 
 def state():
     return json.loads(call("/update"))
@@ -44,7 +48,7 @@ while booted is None and time.time() < deadline:
 check(booted is not None, "device answers /update")
 if flashed:
     check(booted["status"]["system"]["uptime_s"] < 300, "device restarted into the new firmware")
-check("<html" in call("/"), "web panel is served")
+check("settings-form" in call("/"), "web panel is served")
 
 before = booted["config"]["screens"]["interval_sec"]
 changed = before + 1

@@ -331,7 +331,7 @@ String JsonSerializer::buildAppStateJson(const AppState& state) {
         flight["count"] = state.flight.aircraft_count;
         flight["callsign"] = c.callsign;
         if (state.config.flight_mode == "closest") {
-            flight["route"] = c.has_route ? (c.origin_code + " &rarr; " + c.destination_code) : "N/A";
+            flight["route"] = c.has_route ? (c.origin_code + " \u2192 " + c.destination_code) : "N/A";
         }
     }
 
