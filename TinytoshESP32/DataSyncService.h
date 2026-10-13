@@ -53,7 +53,7 @@ private:
     std::atomic<bool> jobFinished{false};
     unsigned long lastFailedAttempt = 0;
 
-    unsigned long getGlobalIntervalMs(const Config& config, bool nightModeLatched) const;
+    static unsigned long intervalMs(unsigned long minutes, bool nightModeLatched);
     bool isFetchDue(unsigned long lastFetch, int customMin, const Config& config, bool nightModeLatched) const;
 
     static void backgroundSyncTaskTrampoline(void* parameter);

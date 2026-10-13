@@ -158,11 +158,8 @@ void BambuService::mqttCallbackStatic(char* topic, byte* payload, unsigned int l
 }
 
 void BambuService::mqttCallback(char* topic, byte* payload, unsigned int length) {
-    String message;
-    for (int i = 0; i < length; i++) message += (char)payload[i];
-
     DynamicJsonDocument doc(BAMBU_JSON_DOC_SIZE);
-    DeserializationError error = deserializeJson(doc, message);
+    DeserializationError error = deserializeJson(doc, payload, length);
 
     if (error) {
         Serial.print("BambuService JSON Parse failed: ");

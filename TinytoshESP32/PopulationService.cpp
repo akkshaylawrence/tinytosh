@@ -1,49 +1,29 @@
 #include "PopulationService.h"
 
+#include "HttpJson.h"
+
 #include <ArduinoJson.h>
-#include <HTTPClient.h>
 #include <time.h>
 
 PopulationService::PopulationService() {}
 
 bool PopulationService::fetchIndicator(String countryCode, String indicator, long long &valInt, double &valFloat, int &year) {
-    HTTPClient http;
     String url = String(POPULATION_API_BASE) + countryCode + "/indicator/" + indicator + "?format=json&mrnev=1";
-    
     Serial.println("PopulationService: Fetching data from World Bank -> " + url);
-    http.setReuse(false);
-    http.begin(url);
-    http.setConnectTimeout(5000); 
-    http.setTimeout(5000);
-    
-    int httpCode = http.GET();
-    bool success = false;
-    
-    if (httpCode == 200) {
-        String payload = http.getString();
-        DynamicJsonDocument doc(2048);
-        DeserializationError error = deserializeJson(doc, payload);
-        
-        if (!error && doc[1].is<JsonArray>()) {
-            JsonObject dataObj = doc[1][0];
-            if (!dataObj["value"].isNull()) {
-                if (indicator == "SP.POP.TOTL") {
-                    valInt = dataObj["value"].as<long long>();
-                } else {
-                    valFloat = dataObj["value"].as<double>();
-                }
-                year = dataObj["date"].as<int>();
-                success = true;
-            }
-        } else {
-            Serial.printf("PopulationService: JSON parsing failed: %s\n", error.c_str());
-        }
+
+    DynamicJsonDocument doc = fetchJson("PopulationService", url, 2048);
+    if (doc.isNull() || !doc[1].is<JsonArray>()) return false;
+
+    JsonObject dataObj = doc[1][0];
+    if (dataObj["value"].isNull()) return false;
+
+    if (indicator == "SP.POP.TOTL") {
+        valInt = dataObj["value"].as<long long>();
     } else {
-        Serial.printf("PopulationService: API failed, HTTP Code: %d\n", httpCode);
+        valFloat = dataObj["value"].as<double>();
     }
-    
-    http.end();
-    return success;
+    year = dataObj["date"].as<int>();
+    return true;
 }
 
 bool PopulationService::fetchPopulation(const Config& config, PopulationData& data) {

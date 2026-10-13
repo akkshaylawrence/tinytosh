@@ -1,9 +1,9 @@
 #include "TimeService.h"
 
 #include <ArduinoJson.h>
-#include <HTTPClient.h>
 #include <time.h>
 
+#include "HttpJson.h"
 #include "zones.h"
 
 char TimeService::customNtpServer[64] = "";
@@ -18,37 +18,27 @@ bool TimeService::fetchLocationData(Config& config) {
 
   Serial.println("TimeService: Fetching location from ip-api.com -> " + String(LOCATION_API_URL));
 
-  HTTPClient http;
-  http.begin(LOCATION_API_URL);
-  http.setTimeout(10000); 
-  int httpCode = http.GET();
-  
-  if (httpCode == HTTP_CODE_OK) {
-    String payload = http.getString();
-    DynamicJsonDocument doc(1024);
-    DeserializationError error = deserializeJson(doc, payload);
-
-    if (!error && doc["status"] == "success") {
-      config.latitude = doc["lat"].as<float>();
-      config.longitude = doc["lon"].as<float>();
-      config.timezone = doc["timezone"].as<String>();
-      config.city = doc["city"].as<String>(); 
-      config.country = doc["country"].as<String>(); 
-      config.country_code = doc["countryCode"].as<String>(); 
-      
-      Serial.printf(
-        "TimeService: Success! Location: %s, %s (%s) - Lat: %.4f, Lon: %.4f, TZ: %s\n", 
-        config.city.c_str(), config.country.c_str(), config.country_code.c_str(), config.latitude, config.longitude, config.timezone.c_str()
-      );
-      return true;
-    } else {
-      Serial.printf("TimeService: Location JSON parsing failed or status not 'success': %s\n", error.c_str()); 
-      return false;
-    }
-  } else {
-    Serial.printf("TimeService: ip-api.com HTTP failed, code: %d\n", httpCode); 
+  HttpJsonOptions options;
+  options.timeoutMs = 10000;
+  DynamicJsonDocument doc = fetchJson("TimeService", LOCATION_API_URL, 1024, options);
+  if (doc.isNull()) return false;
+  if (doc["status"] != "success") {
+    Serial.println("TimeService: ip-api.com did not report success.");
     return false;
   }
+
+  config.latitude = doc["lat"].as<float>();
+  config.longitude = doc["lon"].as<float>();
+  config.timezone = doc["timezone"].as<String>();
+  config.city = doc["city"].as<String>();
+  config.country = doc["country"].as<String>();
+  config.country_code = doc["countryCode"].as<String>();
+
+  Serial.printf(
+    "TimeService: Success! Location: %s, %s (%s) - Lat: %.4f, Lon: %.4f, TZ: %s\n",
+    config.city.c_str(), config.country.c_str(), config.country_code.c_str(), config.latitude, config.longitude, config.timezone.c_str()
+  );
+  return true;
 }
 
 String TimeService::lookupPosixTimezone(const String& ianaTimezone) {

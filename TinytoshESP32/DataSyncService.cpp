@@ -27,9 +27,8 @@ extern PopulationService populationService;
 extern CurrencyService currencyService;
 extern FlightService flightService;
 
-unsigned long DataSyncService::getGlobalIntervalMs(const Config& config, bool nightModeLatched) const {
-    unsigned long multiplier = nightModeLatched ? NIGHT_INTERVAL_MULTIPLIER : 1;
-    return config.refresh_interval_min * 60000UL * multiplier;
+unsigned long DataSyncService::intervalMs(unsigned long minutes, bool nightModeLatched) {
+    return minutes * 60000UL * (nightModeLatched ? NIGHT_INTERVAL_MULTIPLIER : 1);
 }
 
 bool DataSyncService::isFetchDue(unsigned long lastFetch, int customMin, const Config& config, bool nightModeLatched) const {
@@ -37,13 +36,11 @@ bool DataSyncService::isFetchDue(unsigned long lastFetch, int customMin, const C
         return isGlobalSyncDue(config, nightModeLatched);
     }
 
-    unsigned long multiplier = nightModeLatched ? NIGHT_INTERVAL_MULTIPLIER : 1;
-    unsigned long intervalMs = (unsigned long)customMin * 60000UL * multiplier;
-    return (millis() - lastFetch) > intervalMs;
+    return (millis() - lastFetch) > intervalMs(customMin, nightModeLatched);
 }
 
 bool DataSyncService::isGlobalSyncDue(const Config& config, bool nightModeLatched) const {
-    return (millis() - trackers.lastDataUpdate) > getGlobalIntervalMs(config, nightModeLatched);
+    return (millis() - trackers.lastDataUpdate) > intervalMs(config.refresh_interval_min, nightModeLatched);
 }
 
 void DataSyncService::markGlobalSynced() {
@@ -109,7 +106,6 @@ void DataSyncService::runFullSync(AppState& state) {
         displayService.showStartup(config, step.headline, detail, step.percent);
     };
 
-    // 1. Location Detection
     if (config.auto_detect) {
         announce(STEP_LOCATION, "Please wait");
         if (timeService.fetchLocationData(config)) {
@@ -117,7 +113,7 @@ void DataSyncService::runFullSync(AppState& state) {
         }
     }
 
-    // 2. Sync Time (Depends on Location/Timezone)
+    // Depends on the timezone the location step may have set.
     announce(STEP_TIME, config.timezone);
     timeService.syncNTP(config.timezone, config.ntp_server);
 
@@ -125,7 +121,6 @@ void DataSyncService::runFullSync(AppState& state) {
     TimeService::localTime(timeinfo);
     int current_yday = timeinfo.tm_yday;
 
-    // 4. Fetch Weather (Depends on Lat/Lon)
     if (config.show_weather) {
         announce(STEP_WEATHER, config.city);
         String updateTime = TimeService::getCurrentTime(config.time_format);
@@ -133,40 +128,34 @@ void DataSyncService::runFullSync(AppState& state) {
         markFetched(SCREEN_WEATHER);
     }
 
-    // 5. Fetch Air Quality (Depends on Lat/Lon)
     if (config.show_aqi) {
         announce(STEP_AIR_QUALITY, config.city);
         airQualityService.fetchAirQuality(config, state.aqi);
         markFetched(SCREEN_AIR_QUALITY);
     }
 
-    // 6. Fetch Daylight (Depends on Lat/Lon)
     if (config.show_daylight && state.daylight.last_fetch_yday != current_yday) {
         announce(STEP_DAYLIGHT, config.city);
         daylightService.fetchDaylight(config, state.daylight);
     }
 
-    // 7. Fetch Moon (Depends on Lat/Lon)
     if (config.show_moon && state.moon.last_fetch_yday != current_yday) {
         announce(STEP_MOON, config.city);
         moonService.fetchMoon(config, state.moon);
     }
 
-    // 8. Fetch Population (Depends on Country Code)
     if (config.show_population && state.population.last_fetch_yday != current_yday) {
         String popLoc = (config.pop_show_world && config.pop_show_country && config.country_code != "") ? ("World + " + config.country_code) : (config.pop_show_world ? "World" : config.country_code);
         announce(STEP_POPULATION, popLoc);
         populationService.fetchPopulation(config, state.population);
     }
 
-    // 9. Fetch Flight Radar (Depends on Lat/Lon)
     if (config.show_flight) {
         announce(STEP_FLIGHTS, "Within " + String(config.flight_radius_nm) + " nm");
         flightService.fetchFlights(config, state.flight);
         markFetched(SCREEN_FLIGHT);
     }
 
-    // 12. Fetch Currency (Independent)
     if (config.show_currency) {
         for (int i = 0; i < config.currency_count; i++) {
             String baseUpper = String(config.currency_bases[i]);
@@ -182,7 +171,7 @@ void DataSyncService::runFullSync(AppState& state) {
 
     announce(STEP_READY, "Welcome");
 
-    // 13. Save Everything
+    // The location step may have changed the config.
     configManager.saveConfig(config);
 
     markGlobalSynced();

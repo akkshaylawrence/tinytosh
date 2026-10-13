@@ -47,34 +47,36 @@ bool PcMonitorService::handleSerial(AppState &state) {
     return configUpdated;
 }
 
+bool PcMonitorService::applyStats(JsonVariantConst stats, AppState &state, bool overWifi) {
+    state.pc.cpu_percent = stats["cpu_percent"] | 0.0;
+    state.pc.mem_percent = stats["mem_percent"] | 0.0;
+    state.pc.disk_percent = stats["disk_percent"] | 0.0;
+    state.pc.net_down_kb = stats["net_down_kb"] | 0.0;
+
+    state.media.status = stats["media_status"] | "stopped";
+    state.media.name = stats["media_name"] | "";
+    state.media.author = stats["media_author"] | "";
+    state.media.album = stats["media_album"] | "";
+
+    String incoming_id = stats["pc_id"] | "";
+    if (incoming_id != "") {
+        state.config.active_pc_id = incoming_id;
+    }
+
+    unsigned long current_time = millis();
+    state.pc.last_update = current_time;
+    state.pc.is_wifi = overWifi;
+    state.media.last_update = current_time;
+
+    return JsonSerializer::parsePresence(stats, state);
+}
+
 void PcMonitorService::parseJson(const char* jsonString, AppState &state) {
     DynamicJsonDocument doc(1536);
-    DeserializationError error = deserializeJson(doc, jsonString);
+    if (deserializeJson(doc, jsonString)) return;
 
-    if (!error) {
-        state.pc.cpu_percent = doc["cpu_percent"] | 0.0;
-        state.pc.mem_percent = doc["mem_percent"] | 0.0;
-        state.pc.disk_percent = doc["disk_percent"] | 0.0;
-        state.pc.net_down_kb = doc["net_down_kb"] | 0.0;
-        
-        state.media.status = doc["media_status"] | "stopped";
-        state.media.name = doc["media_name"] | "";
-        state.media.author = doc["media_author"] | "";
-        state.media.album = doc["media_album"] | "";
-        
-        String incoming_id = doc["pc_id"] | "";
-        if (incoming_id != "") {
-            state.config.active_pc_id = incoming_id;
-        }
-        
-        unsigned long current_time = millis();
-        state.pc.last_update = current_time; 
-        state.pc.is_wifi = false;
-        state.media.last_update = current_time;
-
-        if (JsonSerializer::parsePresence(doc, state)) {
-            Serial.print("PRESENCE:");
-            Serial.println(JsonSerializer::buildPresenceJson(state.presence));
-        }
+    if (applyStats(doc, state, false)) {
+        Serial.print("PRESENCE:");
+        Serial.println(JsonSerializer::buildPresenceJson(state.presence));
     }
 }
