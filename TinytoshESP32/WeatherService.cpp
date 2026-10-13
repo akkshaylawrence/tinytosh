@@ -15,18 +15,6 @@ String WeatherService::getWeatherDescription(int wmo_code) {
     return "Unknown";
 }
 
-String WeatherService::getWeatherIcon(int wmo_code) {
-  if (wmo_code == 0) return "☀️"; 
-  if (wmo_code == 1 || wmo_code == 2 || wmo_code == 3) return "🌤️"; 
-  if (wmo_code <= 48) return "🌫️"; 
-  if (wmo_code <= 55) return "🌧️"; 
-  if (wmo_code <= 65) return "☔"; 
-  if (wmo_code <= 75) return "❄️"; 
-  if (wmo_code <= 86) return "🌨️"; 
-  if (wmo_code <= 99) return "🌩️"; 
-  return "❓";
-}
-
 bool WeatherService::weatherValueSelected(const Config& config, const char* key) {
     for (int i = 0; i < 6; i++) {
         if (config.weather_values[i] == key) return true;

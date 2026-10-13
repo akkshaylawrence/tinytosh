@@ -33,22 +33,6 @@ enum ScreenType {
   NUM_SCREENS
 };
 
-inline constexpr const char* SCREEN_NAMES[] = {
-  "Time & Date",
-  "Calendar",
-  "Weather",
-  "Air Quality",
-  "Daylight Info",
-  "Moon Info",
-  "Population Info",
-  "Flight Radar",
-  "Currency Exchange",
-  "PC Monitor",
-  "PC Media",
-  "Printer Info",
-  "Screensaver"
-};
-
 enum AnimType {
   ANIM_NONE,
   ANIM_SLIDE_HORIZONTAL,

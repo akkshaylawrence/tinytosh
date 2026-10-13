@@ -10,6 +10,7 @@ sh tools/ui-harness/run.sh
 sh tools/presence-harness/run.sh
 sh tools/config-harness/run.sh
 sh tools/dead-symbols.sh
+sh tools/build-web-panel.sh --check
 
 if [ "$1" != "--no-firmware" ]; then
   OUT="${TMPDIR:-/tmp}/tinytosh-check"
