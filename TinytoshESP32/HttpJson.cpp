@@ -12,13 +12,13 @@ static DeserializationError parse(JsonDocument& doc, Source& source, const JsonD
 // with nothing left for WiFi or the web server in the meantime. Refusing up front costs nothing.
 static const uint32_t TLS_MIN_FREE_HEAP = 56 * 1024;
 
-DynamicJsonDocument fetchJson(const char* tag, const String& url, size_t capacity, const HttpJsonOptions& options) {
+// Starts the request and returns true once a 200 reply has begun. Logs why under tag otherwise.
+static bool request(HTTPClient& http, const char* tag, const String& url, const HttpJsonOptions& options) {
     if (url.startsWith("https") && ESP.getFreeHeap() < TLS_MIN_FREE_HEAP) {
         Serial.printf("%s: Skipped, %u bytes free is too little for HTTPS.\n", tag, (unsigned)ESP.getFreeHeap());
-        return DynamicJsonDocument(0);
+        return false;
     }
 
-    HTTPClient http;
     http.setReuse(false);
     http.begin(url);
     if (options.userAgent) http.setUserAgent(options.userAgent);
@@ -37,6 +37,14 @@ DynamicJsonDocument fetchJson(const char* tag, const String& url, size_t capacit
     if (httpCode != HTTP_CODE_OK) {
         Serial.printf("%s: HTTP request failed, code: %d (free heap %u, largest block %u)\n", tag, httpCode,
                       (unsigned)ESP.getFreeHeap(), (unsigned)ESP.getMaxAllocHeap());
+        return false;
+    }
+    return true;
+}
+
+DynamicJsonDocument fetchJson(const char* tag, const String& url, size_t capacity, const HttpJsonOptions& options) {
+    HTTPClient http;
+    if (!request(http, tag, url, options)) {
         http.end();
         return DynamicJsonDocument(0);
     }
@@ -51,4 +59,11 @@ DynamicJsonDocument fetchJson(const char* tag, const String& url, size_t capacit
         return DynamicJsonDocument(0);
     }
     return doc;
+}
+
+bool fetchStream(const char* tag, const String& url, const HttpJsonOptions& options, const std::function<bool(Stream&)>& read) {
+    HTTPClient http;
+    bool ok = request(http, tag, url, options) && read(http.getStream());
+    http.end();
+    return ok;
 }

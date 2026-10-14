@@ -63,42 +63,26 @@ bool FlightService::fetchNearbyAircraft(const Config& config, FlightAircraft* ou
     Serial.println("FlightService: Fetching nearby aircraft from ADSB.lol (radius " + String(config.flight_radius_nm) + "nm) -> " + url);
 
     DynamicJsonDocument filter(256);
-    JsonArray acFilterArr = filter.createNestedArray("ac");
-    JsonObject acFilterTmpl = acFilterArr.createNestedObject();
-    acFilterTmpl["hex"] = true;
-    acFilterTmpl["flight"] = true;
-    acFilterTmpl["lat"] = true;
-    acFilterTmpl["lon"] = true;
-    acFilterTmpl["alt_baro"] = true;
-    acFilterTmpl["gs"] = true;
-    acFilterTmpl["track"] = true;
-    acFilterTmpl["r"] = true;
-    acFilterTmpl["t"] = true;
-    acFilterTmpl["squawk"] = true;
+    filter["hex"] = true;
+    filter["flight"] = true;
+    filter["lat"] = true;
+    filter["lon"] = true;
+    filter["alt_baro"] = true;
+    filter["gs"] = true;
+    filter["track"] = true;
+    filter["r"] = true;
+    filter["t"] = true;
+    filter["squawk"] = true;
 
-    HttpJsonOptions options;
-    options.timeoutMs = HTTP_TIMEOUT_MS;
-    options.stream = true;
-    options.userAgent = USER_AGENT;
-    options.filter = &filter;
-    DynamicJsonDocument doc = fetchJson("FlightService", url, 24576, options);
-    if (doc.isNull()) return false;
-
-    JsonArray acArr = doc["ac"].as<JsonArray>();
-    if (acArr.isNull()) {
-        Serial.println("FlightService: No aircraft in range.");
-        return true;
-    }
-
-    for (JsonObject state : acArr) {
-        if (state["lat"].isNull() || state["lon"].isNull()) continue;
+    auto consider = [&](JsonObjectConst state) {
+        if (state["lat"].isNull() || state["lon"].isNull()) return;
 
         float altitude = parseAltitudeFt(state["alt_baro"]);
-        if (!isnan(altitude) && altitude <= 0) continue;
+        if (!isnan(altitude) && altitude <= 0) return;
 
         String callsign = state["flight"].isNull() ? "" : state["flight"].as<String>();
         callsign.trim();
-        if (callsign.length() == 0) continue;
+        if (callsign.length() == 0) return;
 
         outTotalCount++;
 
@@ -108,7 +92,7 @@ bool FlightService::fetchNearbyAircraft(const Config& config, FlightAircraft* ou
 
         int insertAt = outCount;
         while (insertAt > 0 && out[insertAt - 1].distance_km > distance) insertAt--;
-        if (insertAt >= maxOut) continue;
+        if (insertAt >= maxOut) return;
 
         int last = (outCount < maxOut) ? outCount : maxOut - 1;
         for (int i = last; i > insertAt; i--) out[i] = out[i - 1];
@@ -132,7 +116,33 @@ bool FlightService::fetchNearbyAircraft(const Config& config, FlightAircraft* ou
         slot.has_route = false;
 
         if (outCount < maxOut) outCount++;
-    }
+    };
+
+    // A busy sky is tens of kilobytes of JSON, more than the heap has beside an open TLS session.
+    // So the "ac" array is read one aircraft at a time, and only the nearest few are kept.
+    HttpJsonOptions options;
+    options.timeoutMs = HTTP_TIMEOUT_MS;
+    options.userAgent = USER_AGENT;
+    bool ok = fetchStream("FlightService", url, options, [&](Stream& body) {
+        if (!body.find("\"ac\":[")) {
+            Serial.println("FlightService: No aircraft in range.");
+            return true;
+        }
+        while (isspace(body.peek())) body.read();
+        if (body.peek() == ']') return true;
+
+        DynamicJsonDocument state(512);
+        do {
+            DeserializationError error = deserializeJson(state, body, DeserializationOption::Filter(filter));
+            if (error) {
+                Serial.printf("FlightService: JSON parsing failed: %s\n", error.c_str());
+                return false;
+            }
+            consider(state.as<JsonObjectConst>());
+        } while (body.findUntil(",", "]"));
+        return true;
+    });
+    if (!ok) return false;
 
     Serial.printf("FlightService: Success! %d aircraft kept after distance ranking.\n", outCount);
     return true;
@@ -157,13 +167,26 @@ void FlightService::fetchRoutes(FlightAircraft* aircraft, int count, String* out
 
     Serial.println("FlightService: Looking up routes for " + String(planes.size()) + " aircraft -> " + String(ADSBLOL_ROUTE_URL) + " (" + payload + ")");
 
+    DynamicJsonDocument filter(256);
+    JsonObject routeFilter = filter.createNestedObject();
+    routeFilter["callsign"] = true;
+    routeFilter["airline_code"] = true;
+    JsonObject airportFilter = routeFilter.createNestedArray("_airports").createNestedObject();
+    airportFilter["iata"] = true;
+    airportFilter["icao"] = true;
+    airportFilter["countryiso2"] = true;
+    airportFilter["location"] = true;
+
     HttpJsonOptions options;
     options.timeoutMs = HTTP_TIMEOUT_MS;
     options.stream = true;
     options.userAgent = USER_AGENT;
     options.referer = HEADER_REFERER;
     options.postBody = &payload;
-    DynamicJsonDocument doc = fetchJson("FlightService", ADSBLOL_ROUTE_URL, 8192, options);
+    options.filter = &filter;
+    // Filtered, a route with a few airports takes under 512 bytes. Sizing the document by the
+    // planes asked about keeps it small enough to allocate beside an open TLS session.
+    DynamicJsonDocument doc = fetchJson("FlightService", ADSBLOL_ROUTE_URL, 768 * planes.size(), options);
     if (doc.isNull()) return;
 
     JsonArray routes = doc.as<JsonArray>();

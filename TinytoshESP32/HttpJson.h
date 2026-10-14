@@ -2,6 +2,7 @@
 #define HTTP_JSON_H
 
 #include <ArduinoJson.h>
+#include <functional>
 
 struct HttpJsonOptions {
     uint32_t timeoutMs = 5000;
@@ -20,5 +21,10 @@ struct HttpJsonOptions {
 // The document is allocated only once the reply has started. A TLS handshake needs nearly all
 // the free heap this device has, so memory taken before it makes the connection fail.
 DynamicJsonDocument fetchJson(const char* tag, const String& url, size_t capacity, const HttpJsonOptions& options = {});
+
+// Requests url and hands the reply body to read, for a reply too large to hold as one document.
+// True only when the status is 200 and read returns true. Like options.stream, read sees the raw
+// body, so it only works with servers that do not send it in chunks.
+bool fetchStream(const char* tag, const String& url, const HttpJsonOptions& options, const std::function<bool(Stream&)>& read);
 
 #endif
