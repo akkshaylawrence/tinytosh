@@ -5,5 +5,11 @@ dist/
 src-tauri/target/
 TinytoshESP32/build/
 TinytoshSimulator/.pio/
+.pio/
 *.bin
 !Tinytosh.bin
+/.dummy/
+/CMakeLists.txt
+/dependencies.lock
+/managed_components/
+/sdkconfig.*
