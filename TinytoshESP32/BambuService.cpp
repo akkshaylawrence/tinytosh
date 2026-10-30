@@ -83,7 +83,12 @@ void BambuService::loop() {
             Serial.println("BambuService: Printer answered at " + config->bambu_ip + "! Negotiating TLS...");
             client.setServer(config->bambu_ip.c_str(), BAMBU_MQTT_PORT);
             // Taken only now, so a device with no printer keeps these 8 KB for its HTTPS fetches.
-            client.setBufferSize(BAMBU_BUFFER_SIZE);
+            // A failed resize leaves the 256 byte default, which drops every report unread.
+            if (!client.setBufferSize(BAMBU_BUFFER_SIZE)) {
+                Serial.printf("BambuService: No room for the %d byte MQTT buffer (free heap %u, largest block %u).\n",
+                              BAMBU_BUFFER_SIZE, (unsigned)ESP.getFreeHeap(), (unsigned)ESP.getMaxAllocHeap());
+                return;
+            }
             
             if (client.connect("TinytoshClient", "bblp", config->bambu_code.c_str())) {
                 Serial.println("BambuService: Connected!");
@@ -159,12 +164,22 @@ void BambuService::mqttCallbackStatic(char* topic, byte* payload, unsigned int l
 }
 
 void BambuService::mqttCallback(char* topic, byte* payload, unsigned int length) {
+    // A full report runs to several KB, more than the heap has in one block beside the TLS
+    // session. The filter keeps only the fields read below, so the document stays small.
+    StaticJsonDocument<BAMBU_FILTER_DOC_SIZE> filter;
+    JsonObject wanted = filter.createNestedObject("print");
+    for (const char* key : {"gcode_state", "mc_percent", "mc_remaining_time", "nozzle_temper", "nozzle_target_temper",
+                            "bed_temper", "bed_target_temper", "layer_num", "total_layer_num", "subtask_name",
+                            "cooling_fan_speed", "big_fan1_speed"}) {
+        wanted[key] = true;
+    }
+
     DynamicJsonDocument doc(BAMBU_JSON_DOC_SIZE);
-    DeserializationError error = deserializeJson(doc, payload, length);
+    DeserializationError error = deserializeJson(doc, payload, length, DeserializationOption::Filter(filter));
 
     if (error) {
-        Serial.print("BambuService JSON Parse failed: ");
-        Serial.println(error.c_str());
+        Serial.printf("BambuService JSON Parse failed: %s (free heap %u, largest block %u)\n", error.c_str(),
+                      (unsigned)ESP.getFreeHeap(), (unsigned)ESP.getMaxAllocHeap());
         return;
     }
 

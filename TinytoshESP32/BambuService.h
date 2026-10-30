@@ -23,7 +23,8 @@ private:
     static const unsigned long BAMBU_SCAN_COOLDOWN_MS = 3000;
     static const int BAMBU_PROBE_KNOWN_IP_MS = 1000;
     static const int BAMBU_PROBE_SCAN_MS = 250;
-    static const int BAMBU_JSON_DOC_SIZE = 12288;
+    static const int BAMBU_JSON_DOC_SIZE = 1024;
+    static const int BAMBU_FILTER_DOC_SIZE = 512;
     static const int BAMBU_SCAN_YIELD_MS = 10;
 
     WiFiClientSecure espClient;
