@@ -102,19 +102,19 @@ void DataSyncService::runFullSync(AppState& state) {
     jobRunning = false;
 
     Config& config = state.config;
-    auto announce = [&](const SyncStep& step, const String& detail) {
-        displayService.showStartup(config, step.headline, detail, step.percent);
+    auto announce = [&](const SyncStep& step) {
+        displayService.showStartup(config, step.headline, step.percent);
     };
 
     if (config.auto_detect) {
-        announce(STEP_LOCATION, "Please wait");
+        announce(STEP_LOCATION);
         if (timeService.fetchLocationData(config)) {
             Serial.println("Location updated via IP");
         }
     }
 
     // Depends on the timezone the location step may have set.
-    announce(STEP_TIME, config.timezone);
+    announce(STEP_TIME);
     timeService.syncNTP(config.timezone, config.ntp_server);
 
     struct tm timeinfo;
@@ -122,54 +122,48 @@ void DataSyncService::runFullSync(AppState& state) {
     int current_yday = timeinfo.tm_yday;
 
     if (config.show_weather) {
-        announce(STEP_WEATHER, config.city);
+        announce(STEP_WEATHER);
         String updateTime = TimeService::getCurrentTime(config.time_format);
         weatherService.fetchWeather(config, state.weather, updateTime);
         markFetched(SCREEN_WEATHER);
     }
 
     if (config.show_aqi) {
-        announce(STEP_AIR_QUALITY, config.city);
+        announce(STEP_AIR_QUALITY);
         airQualityService.fetchAirQuality(config, state.aqi);
         markFetched(SCREEN_AIR_QUALITY);
     }
 
     if (config.show_daylight && state.daylight.last_fetch_yday != current_yday) {
-        announce(STEP_DAYLIGHT, config.city);
+        announce(STEP_DAYLIGHT);
         daylightService.fetchDaylight(config, state.daylight);
     }
 
     if (config.show_moon && state.moon.last_fetch_yday != current_yday) {
-        announce(STEP_MOON, config.city);
+        announce(STEP_MOON);
         moonService.fetchMoon(config, state.moon);
     }
 
     if (config.show_population && state.population.last_fetch_yday != current_yday) {
-        String popLoc = (config.pop_show_world && config.pop_show_country && config.country_code != "") ? ("World + " + config.country_code) : (config.pop_show_world ? "World" : config.country_code);
-        announce(STEP_POPULATION, popLoc);
+        announce(STEP_POPULATION);
         populationService.fetchPopulation(config, state.population);
     }
 
     if (config.show_flight) {
-        announce(STEP_FLIGHTS, "Within " + String(config.flight_radius_nm) + " nm");
+        announce(STEP_FLIGHTS);
         flightService.fetchFlights(config, state.flight);
         markFetched(SCREEN_FLIGHT);
     }
 
     if (config.show_currency) {
+        announce(STEP_CURRENCY);
         for (int i = 0; i < config.currency_count; i++) {
-            String baseUpper = String(config.currency_bases[i]);
-            baseUpper.toUpperCase();
-            String targetUpper = String(config.currency_targets[i]);
-            targetUpper.toUpperCase();
-
-            announce(STEP_CURRENCY, baseUpper + " to " + targetUpper);
             currencyService.fetchRate(config.currency_bases[i], config.currency_targets[i], state.currencies[i]);
         }
         markFetched(SCREEN_CURRENCY);
     }
 
-    announce(STEP_READY, "Welcome");
+    announce(STEP_READY);
 
     // The location step may have changed the config.
     configManager.saveConfig(config);

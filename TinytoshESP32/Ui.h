@@ -139,9 +139,10 @@ public:
   Canvas frame(const String& title, const String& corner = "", bool showClock = true);
   // A Mac alert box with a 32x32 icon. Use for empty and error states.
   void alert(const uint8_t* icon32, const String& message);
-  // The boot card: a 24x24 Mac face, a headline, a detail line, and a progress bar.
-  // A negative percent leaves the bar out.
-  void startup(const uint8_t* face24, const String& headline, const String& detail, int percent);
+  // The boot card: a 24x24 Mac face, a headline, and a progress bar.
+  void startup(const uint8_t* face24, const String& headline, int percent);
+  // The boot card when boot cannot go on: a 24x24 Mac face, a headline, and what to do next.
+  void startupFailed(const uint8_t* face24, const String& headline, const String& detail);
   // A framed window of up to five centred lines, for values the user has to read off.
   void notice(const String& title, const String* lines, int count);
   // For scenes that paint the whole panel themselves. Paper colour is not applied to them.

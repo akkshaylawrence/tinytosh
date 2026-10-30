@@ -13,7 +13,8 @@ public:
     DisplayService(int width, int height, int reset_pin);
     void begin(int sda, int scl);
     
-    void showStartup(const Config& config, const String& headline, const String& detail, int percent, bool ok = true);
+    void showStartup(const Config& config, const String& headline, int percent);
+    void showStartupFailed(const Config& config, const String& headline, const String& detail);
     void showNotice(const Config& config, const String& title, std::initializer_list<String> lines);
     void showAlert(const Config& config, const unsigned char* icon, const String& text);
 

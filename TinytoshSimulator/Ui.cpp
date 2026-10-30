@@ -512,13 +512,20 @@ void Surface::alert(const uint8_t* icon32, const String& message) {
   c.textCentered("OK", bx + bw / 2 + 1, by + 2);
 }
 
-void Surface::startup(const uint8_t* face24, const String& headline, const String& detail, int percent) {
+void Surface::startup(const uint8_t* face24, const String& headline, int percent) {
   Canvas c = frame("Tinytosh", "", false);
   const int cx = c.w / 2;
-  c.icon(face24, cx - 12, 0, 24, 24);
-  c.textFitCentered(headline, cx, 27, c.w);
-  c.textFitCentered(detail, cx, 37, c.w, FONT_SMALL);
-  if (percent >= 0) c.progress(10, 44, c.w - 20, 6, percent);
+  c.icon(face24, cx - 12, 2, 24, 24);
+  c.textFitCentered(headline, cx, 30, c.w);
+  c.progress(10, 42, c.w - 20, 6, percent);
+}
+
+void Surface::startupFailed(const uint8_t* face24, const String& headline, const String& detail) {
+  Canvas c = frame("Tinytosh", "", false);
+  const int cx = c.w / 2;
+  c.icon(face24, cx - 12, 4, 24, 24);
+  c.textFitCentered(headline, cx, 31, c.w);
+  c.textFitCentered(detail, cx, 41, c.w, FONT_SMALL);
 }
 
 void Surface::notice(const String& title, const String* lines, int count) {

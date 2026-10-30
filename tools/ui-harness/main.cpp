@@ -317,10 +317,10 @@ struct Card {
 
 static const Card CARDS[] = {
   {"alert", [](Ui::Surface& ui) { ui.alert(icon_lock, "Auto Cycle Off"); }},
-  {"startup-welcome", [](Ui::Surface& ui) { ui.startup(icon_mac_happy, "Welcome to Tinytosh", "Starting up", 5); }},
-  {"startup-longest", [](Ui::Surface& ui) { ui.startup(icon_mac_happy, "Updating Air Quality", "America/Argentina/ComodRivadavia", 44); }},
-  {"startup-ready", [](Ui::Surface& ui) { ui.startup(icon_mac_happy, "Tinytosh is Ready", "Welcome", 100); }},
-  {"startup-failed", [](Ui::Surface& ui) { ui.startup(icon_mac_sad, "Connect Failed", "Use the Web Panel to set WiFi", -1); }},
+  {"startup-welcome", [](Ui::Surface& ui) { ui.startup(icon_mac_happy, "Welcome to Tinytosh", 5); }},
+  {"startup-longest", [](Ui::Surface& ui) { ui.startup(icon_mac_happy, "Updating Air Quality", 44); }},
+  {"startup-ready", [](Ui::Surface& ui) { ui.startup(icon_mac_happy, "Tinytosh is Ready", 100); }},
+  {"startup-failed", [](Ui::Surface& ui) { ui.startupFailed(icon_mac_sad, "Connect Failed", "Use the Web Panel to set WiFi"); }},
   {"notice-wifi", [](Ui::Surface& ui) {
     const String lines[] = {"Join this network:", "ABCDEFGHIJKLMNOPQRSTUVWXYZ012345", "", "Password:", "Tinytosh"};
     ui.notice("WiFi Setup", lines, 5);

@@ -35,10 +35,18 @@ void DisplayService::begin(int sda, int scl) {
     }
 }
 
-void DisplayService::showStartup(const Config& config, const String& headline, const String& detail, int percent, bool ok) {
+void DisplayService::showStartup(const Config& config, const String& headline, int percent) {
     display.clearDisplay();
     Ui::Surface ui = surfaceFor(display, config);
-    ui.startup(ok ? icon_mac_happy : icon_mac_sad, headline, detail, percent);
+    ui.startup(icon_mac_happy, headline, percent);
+    ui.finish();
+    display.display();
+}
+
+void DisplayService::showStartupFailed(const Config& config, const String& headline, const String& detail) {
+    display.clearDisplay();
+    Ui::Surface ui = surfaceFor(display, config);
+    ui.startupFailed(icon_mac_sad, headline, detail);
     ui.finish();
     display.display();
 }

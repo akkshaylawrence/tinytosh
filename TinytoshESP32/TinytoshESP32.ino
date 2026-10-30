@@ -137,7 +137,7 @@ void setup() {
   displayService.begin(appState.config.sda_pin, appState.config.scl_pin);
   delay(3000);
 
-  displayService.showStartup(appState.config, "Welcome to Tinytosh", "Starting up", 5);
+  displayService.showStartup(appState.config, "Welcome to Tinytosh", 5);
   bambuService.begin(&appState.config, &appState.bambu);
 
   WiFiManager wm;
@@ -148,7 +148,7 @@ void setup() {
     displayService.showNotice(appState.config, "WiFi Setup", {"Join this network:", AP_SSID, "", "Password:", AP_PASS});
   });
 
-  displayService.showStartup(appState.config, "Connecting", "Searching for WiFi", 10);
+  displayService.showStartup(appState.config, "Connecting", 10);
 
   if (wm.autoConnect(AP_SSID, AP_PASS)) {
     String ipAddress = WiFi.localIP().toString();
@@ -172,7 +172,7 @@ void setup() {
 
   } else {
     Serial.println("Failed to connect and timed out. Staying in AP Mode.");
-    displayService.showStartup(appState.config, "Connect Failed", "Use the Web Panel to set WiFi", -1, false);
+    displayService.showStartupFailed(appState.config, "Connect Failed", "Use the Web Panel to set WiFi");
   }
 
   // 5. Initialize Web Server
