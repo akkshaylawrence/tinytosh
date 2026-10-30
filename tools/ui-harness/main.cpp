@@ -304,6 +304,7 @@ static const Scenario SCENARIOS[] = {
   {"media-no-album", SCREEN_PC_MEDIA, [](AppState& s) { s.media.album = ""; s.media.name = "A song with a fairly long name that wraps to three lines"; }},
   {"bambu-printing", SCREEN_BAMBU, [](AppState&) {}},
   {"bambu-long-file", SCREEN_BAMBU, [](AppState& s) { s.bambu.file_name = "articulated_dragon_v12_final_supports.gcode.3mf"; s.bambu.progress = 100; s.bambu.time_left = 1440; s.bambu.layer = 1999; s.bambu.total_layers = 2000; s.bambu.fan_part = 100; s.bambu.fan_aux = 100; s.bambu.nozzle_temp = 300; s.bambu.nozzle_target = 300; s.bambu.bed_temp = 110; s.bambu.bed_target = 110; }},
+  {"bambu-many-layers", SCREEN_BAMBU, [](AppState& s) { s.bambu.layer = 1999; s.bambu.total_layers = 2000; }},
   {"bambu-preparing", SCREEN_BAMBU, [](AppState& s) { s.bambu.status = "PREPARE"; s.bambu.progress = 0; s.bambu.layer = 0; s.bambu.time_left = 72; }},
   {"bambu-paused", SCREEN_BAMBU, [](AppState& s) { s.bambu.status = "PAUSE"; }},
   {"bambu-half", SCREEN_BAMBU, [](AppState& s) { s.bambu.progress = 50; s.bambu.layer = 100; s.bambu.time_left = 95; }},

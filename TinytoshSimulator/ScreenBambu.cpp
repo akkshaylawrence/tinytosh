@@ -24,48 +24,61 @@ String formatTimeLeft(int mins) {
   return String(mins / 60) + "h" + (rest < 10 ? "0" : "") + String(rest) + "m";
 }
 
-void drawRow(Ui::Canvas& c, const String& label, const String& value, int y) {
-  c.text(label, 0, y + 4, Ui::FONT_SMALL);
-  c.textRight(value, c.w, y, Ui::FONT_LARGE);
+const int LABEL_Y = 0;
+const int VALUE_Y = 7;
+const int BAR_Y = 23;
+const int BAR_H = 20;
+const int FOOTER_Y = 45;
+
+void drawLeftStat(Ui::Canvas& c, const String& label, const String& value) {
+  c.text(label, 0, LABEL_Y, Ui::FONT_SMALL);
+  c.text(value, 0, VALUE_Y, Ui::FONT_LARGE);
 }
 
-void drawTempRow(Ui::Canvas& c, const String& label, float degrees, int y) {
+void drawRightStat(Ui::Canvas& c, const String& label, const String& value) {
+  c.textRight(label, c.w, LABEL_Y, Ui::FONT_SMALL);
+  c.textRight(value, c.w, VALUE_Y, Ui::FONT_LARGE);
+}
+
+void drawTemp(Ui::Canvas& c, const String& label, float degrees, bool alignRight) {
   const String value = String((int)round(degrees));
-  c.text(label, 0, y + 4, Ui::FONT_SMALL);
-  c.textWithMark(value, c.w - c.textWidth(value, Ui::FONT_LARGE) - 5, y, Ui::FONT_LARGE, degree_icon_small, 4, 4);
+  const int x = alignRight ? c.w - c.textWidth(value, Ui::FONT_LARGE) - 5 : 0;
+  if (alignRight) c.textRight(label, c.w, LABEL_Y, Ui::FONT_SMALL);
+  else c.text(label, 0, LABEL_Y, Ui::FONT_SMALL);
+  c.textWithMark(value, x, VALUE_Y, Ui::FONT_LARGE, degree_icon_small, 4, 4);
 }
 
-void drawProgress(Ui::Canvas& c, const String& label, int percent, int y) {
+void drawProgress(Ui::Canvas& c, const String& label, int percent) {
   percent = percent < 0 ? 0 : percent > 100 ? 100 : percent;
   Ui::Group bar("progress bar");
-  c.rect(0, y, c.w, 11);
-  c.textCentered(label, c.w / 2, y + 2);
-  // Fills past the digits' height, so inverted digits keep a lit row above and below them.
-  c.invert(1, y + 1, (c.w - 2) * percent / 100, 9);
+  c.rect(0, BAR_Y, c.w, BAR_H);
+  c.textCentered(label, c.w / 2, BAR_Y + 3, Ui::FONT_LARGE);
+  // Fills past the digits' height, so inverted digits keep lit rows above and below them.
+  c.invert(1, BAR_Y + 1, (c.w - 2) * percent / 100, BAR_H - 2);
 }
 
-void drawFans(Ui::Canvas& c, const BambuData& data, int y) {
-  c.textRight("F" + String(data.fan_part) + " A" + String(data.fan_aux), c.w, y, Ui::FONT_SMALL);
+void drawFans(Ui::Canvas& c, const BambuData& data) {
+  c.textRight("F" + String(data.fan_part) + " A" + String(data.fan_aux), c.w, FOOTER_Y, Ui::FONT_SMALL);
 }
 
 void drawIdle(Ui::Canvas& c, const BambuData& data) {
-  drawTempRow(c, "Noz", data.nozzle_temp, 0);
-  drawTempRow(c, "Bed", data.bed_temp, 16);
-  drawProgress(c, "Idle", 0, 32);
-  drawFans(c, data, 45);
+  drawTemp(c, "Noz", data.nozzle_temp, false);
+  drawTemp(c, "Bed", data.bed_temp, true);
+  drawProgress(c, "IDLE", 0);
+  drawFans(c, data);
 }
 
 void drawJob(Ui::Canvas& c, const BambuData& data, Phase phase) {
-  if (phase == PHASE_FINISHED) drawRow(c, "Print", "Done", 0);
-  else if (phase == PHASE_FAILED) drawRow(c, "Print", "Failed", 0);
-  else drawRow(c, "Left", formatTimeLeft(data.time_left), 0);
-  drawRow(c, "Lyr", String(data.layer) + "/" + String(data.total_layers), 16);
+  if (phase == PHASE_FINISHED) drawLeftStat(c, "Print", "DONE");
+  else if (phase == PHASE_FAILED) drawLeftStat(c, "Print", "FAILED");
+  else drawLeftStat(c, "Left", formatTimeLeft(data.time_left));
+  drawRightStat(c, "Progress", String(data.progress) + "%");
 
-  const String percent = String(data.progress) + "%";
-  drawProgress(c, phase == PHASE_PREPARING ? String("Preparing") : phase == PHASE_PAUSED ? String("Paused") : percent, data.progress, 32);
+  const String layers = String(data.layer) + "/" + String(data.total_layers);
+  drawProgress(c, phase == PHASE_PREPARING ? String("PREPARING") : phase == PHASE_PAUSED ? String("PAUSED") : layers, data.progress);
 
-  c.text("N" + String((int)round(data.nozzle_temp)) + " B" + String((int)round(data.bed_temp)), 0, 45, Ui::FONT_SMALL);
-  drawFans(c, data, 45);
+  c.text("N" + String((int)round(data.nozzle_temp)) + " B" + String((int)round(data.bed_temp)), 0, FOOTER_Y, Ui::FONT_SMALL);
+  drawFans(c, data);
 }
 
 String jobTitle(const BambuData& data) {
