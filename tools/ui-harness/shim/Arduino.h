@@ -98,6 +98,11 @@ struct EspClass {
   uint32_t getMaxAllocHeap() { return 0; }
 };
 extern EspClass ESP;
+
+struct HarnessSerial {
+  template <typename... Args> void printf(const char* format, Args... args) { fprintf(stderr, format, args...); }
+};
+inline HarnessSerial Serial;
 inline unsigned uxTaskGetStackHighWaterMark(void*) { return 0; }
 
 #endif

@@ -195,7 +195,9 @@ String JsonSerializer::buildConfigJson(const Config& config) {
 }
 
 String JsonSerializer::buildAppStateJson(const AppState& state) {
-    DynamicJsonDocument doc(6144);
+    // Every section filled measures about 3.4 KB on the ESP32. A connected printer leaves the
+    // heap's largest block near 7 KB, so asking for much more than needed can get nothing.
+    DynamicJsonDocument doc(4096);
 
     // 1. Config, grouped identically to buildConfigJson's output
     JsonObject configObj = doc.createNestedObject("config");
@@ -325,6 +327,11 @@ String JsonSerializer::buildAppStateJson(const AppState& state) {
         if (state.config.flight_mode == "closest") {
             flight["route"] = c.has_route ? (c.origin_code + " \u2192 " + c.destination_code) : "N/A";
         }
+    }
+
+    if (doc.overflowed()) {
+        Serial.printf("JsonSerializer: State did not fit in %u bytes (free heap %u, largest block %u).\n",
+                      (unsigned)doc.capacity(), (unsigned)ESP.getFreeHeap(), (unsigned)ESP.getMaxAllocHeap());
     }
 
     String output;

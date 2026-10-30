@@ -774,6 +774,11 @@ async function fetchDeviceData() {
     try {
         const jsonStr = await device.fetchState();
         const d = JSON.parse(jsonStr);
+        // The device answers null when it has no memory left to build the reply.
+        if (!d || typeof d !== "object") {
+            setUiStatus("⚠️ Device is low on memory, retrying...", COLOR_MUTED, 5000);
+            return;
+        }
 
         // Text from the device is never parsed as HTML: it carries names from other people's servers.
         const set = (id, val) => { const el = document.getElementById(id); if(el && val !== undefined) el.innerText = val; };
