@@ -4,45 +4,73 @@
 
 namespace {
 
-void drawReading(Ui::Canvas& c, const unsigned char* icon, float degrees, int x, int y) {
+enum Phase : uint8_t { PHASE_IDLE, PHASE_PREPARING, PHASE_PRINTING, PHASE_PAUSED, PHASE_FINISHED, PHASE_FAILED };
+
+Phase phaseOf(String status) {
+  status.toUpperCase();
+  if (status == "IDLE") return PHASE_IDLE;
+  if (status == "PREPARE") return PHASE_PREPARING;
+  if (status == "PAUSE") return PHASE_PAUSED;
+  if (status == "FINISH" || status == "FINISHED") return PHASE_FINISHED;
+  if (status == "FAILED") return PHASE_FAILED;
+  return PHASE_PRINTING;
+}
+
+// Never wider than five characters. Past ten hours the minutes stop mattering.
+String formatTimeLeft(int mins) {
+  if (mins < 60) return String(mins) + "m";
+  if (mins >= 600) return String(mins / 60) + "h";
+  const int rest = mins % 60;
+  return String(mins / 60) + "h" + (rest < 10 ? "0" : "") + String(rest) + "m";
+}
+
+void drawRow(Ui::Canvas& c, const String& label, const String& value, int y) {
+  c.text(label, 0, y + 4, Ui::FONT_SMALL);
+  c.textRight(value, c.w, y, Ui::FONT_LARGE);
+}
+
+void drawTempRow(Ui::Canvas& c, const String& label, float degrees, int y) {
   const String value = String((int)round(degrees));
-  Ui::Group reading(value.c_str());
-  c.icon(icon, x, y + 3, 8, 8);
-  c.textWithMark(value, x + 12, y, Ui::FONT_LARGE, degree_icon_small, 4, 4);
+  c.text(label, 0, y + 4, Ui::FONT_SMALL);
+  c.textWithMark(value, c.w - c.textWidth(value, Ui::FONT_LARGE) - 5, y, Ui::FONT_LARGE, degree_icon_small, 4, 4);
 }
 
-void drawIdle(Ui::Canvas& c, const BambuData& data, const String& status) {
-  c.icon(icon_printer, 0, 9, 32, 32);
-  const int x = 40;
-  c.textFit(status, x, 1, c.w - x);
-  drawReading(c, icon_nozzle, data.nozzle_temp, x, 15);
-  drawReading(c, icon_bed, data.bed_temp, x, 34);
+void drawProgress(Ui::Canvas& c, const String& label, int percent, int y) {
+  percent = percent < 0 ? 0 : percent > 100 ? 100 : percent;
+  Ui::Group bar("progress bar");
+  c.rect(0, y, c.w, 11);
+  c.textCentered(label, c.w / 2, y + 2);
+  // Fills past the digits' height, so inverted digits keep a lit row above and below them.
+  c.invert(1, y + 1, (c.w - 2) * percent / 100, 9);
 }
 
-void drawGauge(Ui::Canvas& c, const unsigned char* icon, const String& value, int y, bool rightSide) {
-  Ui::Group gauge(value.c_str());
-  if (rightSide) {
-    c.icon(icon, c.w - 8, y, 8, 8);
-    c.textRight(value, c.w - 11, y + 1);
-  } else {
-    c.icon(icon, 0, y, 8, 8);
-    c.text(value, 11, y + 1);
-  }
+void drawFans(Ui::Canvas& c, const BambuData& data, int y) {
+  c.textRight("F" + String(data.fan_part) + " A" + String(data.fan_aux), c.w, y, Ui::FONT_SMALL);
 }
 
-void drawPrinting(Ui::Canvas& c, const BambuData& data) {
-  drawGauge(c, icon_nozzle, String((int)round(data.nozzle_temp)) + "/" + String((int)round(data.nozzle_target)), 0, false);
-  drawGauge(c, icon_bed, String((int)round(data.bed_temp)) + "/" + String((int)round(data.bed_target)), 10, false);
-  drawGauge(c, icon_part_fan, String(data.fan_part) + "%", 0, true);
-  drawGauge(c, icon_aux_fan, String(data.fan_aux) + "%", 10, true);
+void drawIdle(Ui::Canvas& c, const BambuData& data) {
+  drawTempRow(c, "Noz", data.nozzle_temp, 0);
+  drawTempRow(c, "Bed", data.bed_temp, 16);
+  drawProgress(c, "Idle", 0, 32);
+  drawFans(c, data, 45);
+}
 
+void drawJob(Ui::Canvas& c, const BambuData& data, Phase phase) {
+  if (phase == PHASE_FINISHED) drawRow(c, "Print", "Done", 0);
+  else if (phase == PHASE_FAILED) drawRow(c, "Print", "Failed", 0);
+  else drawRow(c, "Left", formatTimeLeft(data.time_left), 0);
+  drawRow(c, "Lyr", String(data.layer) + "/" + String(data.total_layers), 16);
+
+  const String percent = String(data.progress) + "%";
+  drawProgress(c, phase == PHASE_PREPARING ? String("Preparing") : phase == PHASE_PAUSED ? String("Paused") : percent, data.progress, 32);
+
+  c.text("N" + String((int)round(data.nozzle_temp)) + " B" + String((int)round(data.bed_temp)), 0, 45, Ui::FONT_SMALL);
+  drawFans(c, data, 45);
+}
+
+String jobTitle(const BambuData& data) {
   const bool unnamed = data.file_name.length() == 0 || data.file_name.equalsIgnoreCase("None");
-  c.textFitCentered(unnamed ? String("Idle") : Ui::ascii(data.file_name), c.w / 2, 21, c.w);
-
-  c.progress(0, 32, c.w, 6, data.progress);
-  c.text(String(data.progress) + "%", 0, 41);
-  c.textCentered(String(data.layer) + "/" + String(data.total_layers), c.w / 2, 41);
-  c.textRight(String(data.time_left) + "m", c.w, 41);
+  return unnamed ? String("Printer") : Ui::ascii(data.file_name);
 }
 
 }  // namespace
@@ -58,11 +86,9 @@ void Screens::drawBambu(Ui::Surface& ui, const AppState& state, int) {
   }
 
   const BambuData& data = state.bambu;
-  String status = data.status;
-  status.toUpperCase();
-  const bool idle = status == "IDLE" || status == "FINISH" || status == "FINISHED" || status == "FAILED";
+  const Phase phase = phaseOf(data.status);
 
-  Ui::Canvas c = ui.frame(idle ? "Printer" : "Printing");
-  if (idle) drawIdle(c, data, status);
-  else drawPrinting(c, data);
+  Ui::Canvas c = ui.frame(phase == PHASE_IDLE ? String("Printer") : jobTitle(data));
+  if (phase == PHASE_IDLE) drawIdle(c, data);
+  else drawJob(c, data, phase);
 }
