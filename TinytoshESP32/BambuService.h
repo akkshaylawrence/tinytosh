@@ -13,10 +13,16 @@ public:
     BambuService();
     void begin(Config* config, BambuData* data);
     void loop();
+    // Closes the printer session until resumeSession(), so an HTTPS fetch has the heap a TLS
+    // handshake needs. loop() does the closing, so call this from another task: it waits up to
+    // waitMs and is true once the session is closed.
+    bool pauseSession(uint32_t waitMs);
+    void resumeSession();
 
 private:
     static const int BAMBU_MQTT_PORT = 8883;
     static const int BAMBU_BUFFER_SIZE = 8192;
+    static const int BAMBU_PAUSED_BUFFER_SIZE = 256;
     static const int BAMBU_TLS_TIMEOUT_SEC = 5;
     static const unsigned long BAMBU_RECONNECT_INTERVAL_MS = 30000;
     static const unsigned long BAMBU_DATA_TIMEOUT_MS = 60000;
@@ -40,6 +46,10 @@ private:
     std::atomic<bool> scanFound{false};
     String scanBaseIp;
     String scanFoundIp;
+
+    // Another task raises pauseRequested; loop() closes the session and raises sessionClosed.
+    std::atomic<bool> pauseRequested{false};
+    std::atomic<bool> sessionClosed{false};
 
     static BambuService* instance;
     static void mqttCallbackStatic(char* topic, byte* payload, unsigned int length);

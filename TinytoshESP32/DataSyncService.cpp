@@ -5,11 +5,13 @@
 #include <WiFi.h>
 
 #include "AirQualityService.h"
+#include "BambuService.h"
 #include "ConfigManager.h"
 #include "CurrencyService.h"
 #include "DaylightService.h"
 #include "DisplayService.h"
 #include "FlightService.h"
+#include "HttpJson.h"
 #include "MoonService.h"
 #include "PopulationService.h"
 #include "TimeService.h"
@@ -26,6 +28,7 @@ extern MoonService moonService;
 extern PopulationService populationService;
 extern CurrencyService currencyService;
 extern FlightService flightService;
+extern BambuService bambuService;
 
 unsigned long DataSyncService::intervalMs(unsigned long minutes, bool nightModeLatched) {
     return minutes * 60000UL * (nightModeLatched ? NIGHT_INTERVAL_MULTIPLIER : 1);
@@ -257,15 +260,31 @@ void DataSyncService::runJob() {
     TimeService::localTime(timeinfo);
     int current_yday = timeinfo.tm_yday;
 
-    if (config.show_daylight && job.daylight.last_fetch_yday != current_yday) {
+    const bool dueDaylight = config.show_daylight && job.daylight.last_fetch_yday != current_yday;
+    const bool dueMoon = config.show_moon && job.moon.last_fetch_yday != current_yday;
+    const bool duePopulation = config.show_population && job.population.last_fetch_yday != current_yday;
+
+    // A connected printer's TLS session leaves too little heap for another, so these daily fetches
+    // would be skipped for as long as it stays up. Closing it for them costs a reconnect, which
+    // the interval keeps to one per BAMBU_PAUSE_INTERVAL_MS while a fetch keeps failing. The
+    // session stays closed to the end of the job, so its handshake never races a fetch's.
+    bool pausedBambu = false;
+    if ((dueDaylight || dueMoon || duePopulation) && !tlsHeapAvailable()
+        && (lastBambuPause == 0 || millis() - lastBambuPause > BAMBU_PAUSE_INTERVAL_MS)) {
+        lastBambuPause = millis();
+        pausedBambu = true;
+        if (!bambuService.pauseSession(BAMBU_PAUSE_WAIT_MS)) Serial.println("Background Task: Printer session did not pause in time.");
+    }
+
+    if (dueDaylight) {
         daylightService.fetchDaylight(config, job.daylight);
         job.fetchedDaylight = true;
     }
-    if (config.show_moon && job.moon.last_fetch_yday != current_yday) {
+    if (dueMoon) {
         moonService.fetchMoon(config, job.moon);
         job.fetchedMoon = true;
     }
-    if (config.show_population && job.population.last_fetch_yday != current_yday) {
+    if (duePopulation) {
         populationService.fetchPopulation(config, job.population);
         job.fetchedPopulation = true;
     }
@@ -276,6 +295,8 @@ void DataSyncService::runJob() {
     if (job.dueCurrency) {
         for (int i = 0; i < config.currency_count; i++) currencyService.fetchRate(config.currency_bases[i], config.currency_targets[i], job.currencies[i]);
     }
+
+    if (pausedBambu) bambuService.resumeSession();
 
     Serial.printf("Background Task: Updates complete. Stack headroom: %u\n", (unsigned)uxTaskGetStackHighWaterMark(NULL));
 }

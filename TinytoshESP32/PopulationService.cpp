@@ -11,7 +11,11 @@ bool PopulationService::fetchIndicator(String countryCode, String indicator, lon
     String url = String(POPULATION_API_BASE) + countryCode + "/indicator/" + indicator + "?format=json&mrnev=1";
     Serial.println("PopulationService: Fetching data from World Bank -> " + url);
 
-    DynamicJsonDocument doc = fetchJson("PopulationService", url, 2048);
+    // The World Bank API has been seen taking over 30 s to answer a request it served in 0.1 s
+    // moments later, so the 5 s default gives up on it too soon.
+    HttpJsonOptions options;
+    options.timeoutMs = WORLD_BANK_TIMEOUT_MS;
+    DynamicJsonDocument doc = fetchJson("PopulationService", url, 2048, options);
     if (doc.isNull() || !doc[1].is<JsonArray>()) return false;
 
     JsonObject dataObj = doc[1][0];

@@ -47,6 +47,8 @@ public:
 private:
     static const int NIGHT_INTERVAL_MULTIPLIER = 10;
     static const unsigned long RETRY_BACKOFF_MS = 30000;
+    static const unsigned long BAMBU_PAUSE_INTERVAL_MS = 10 * 60000UL;
+    static const uint32_t BAMBU_PAUSE_WAIT_MS = 2000;
 
     FetchTrackers trackers;
 
@@ -56,6 +58,8 @@ private:
     std::atomic<bool> jobRunning{false};
     std::atomic<bool> jobFinished{false};
     unsigned long lastFailedAttempt = 0;
+    // Only the task reads or writes this.
+    unsigned long lastBambuPause = 0;
 
     static unsigned long intervalMs(unsigned long minutes, bool nightModeLatched);
     bool isFetchDue(unsigned long lastFetch, int customMin, const Config& config, bool nightModeLatched) const;

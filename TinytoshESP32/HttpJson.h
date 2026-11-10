@@ -15,6 +15,9 @@ struct HttpJsonOptions {
     bool stream = false;
 };
 
+// Whether the heap has room for the TLS session an https url needs. request() skips one without.
+bool tlsHeapAvailable();
+
 // Requests url and parses the reply into a document of the given capacity. The document is null,
 // with the reason logged under tag, unless the status is 200 and the body is JSON.
 //

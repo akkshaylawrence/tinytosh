@@ -12,9 +12,13 @@ static DeserializationError parse(JsonDocument& doc, Source& source, const JsonD
 // with nothing left for WiFi or the web server in the meantime. Refusing up front costs nothing.
 static const uint32_t TLS_MIN_FREE_HEAP = 56 * 1024;
 
+bool tlsHeapAvailable() {
+    return ESP.getFreeHeap() >= TLS_MIN_FREE_HEAP;
+}
+
 // Starts the request and returns true once a 200 reply has begun. Logs why under tag otherwise.
 static bool request(HTTPClient& http, const char* tag, const String& url, const HttpJsonOptions& options) {
-    if (url.startsWith("https") && ESP.getFreeHeap() < TLS_MIN_FREE_HEAP) {
+    if (url.startsWith("https") && !tlsHeapAvailable()) {
         Serial.printf("%s: Skipped, %u bytes free is too little for HTTPS.\n", tag, (unsigned)ESP.getFreeHeap());
         return false;
     }

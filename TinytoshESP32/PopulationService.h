@@ -14,6 +14,7 @@ public:
 
 private:
   static constexpr const char* POPULATION_API_BASE = "https://api.worldbank.org/v2/country/";
+  static const uint32_t WORLD_BANK_TIMEOUT_MS = 15000;
   
   bool fetchIndicator(String countryCode, String indicator, long long &valInt, double &valFloat, int &year);
 };

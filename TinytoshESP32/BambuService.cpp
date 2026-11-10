@@ -32,6 +32,23 @@ void BambuService::loop() {
         configManager.saveConfig(*config);
     }
 
+    if (pauseRequested) {
+        if (!sessionClosed) {
+            if (client.connected()) client.disconnect();
+            // Gives back the 8 KB report buffer too. It is taken again before the next connect.
+            client.setBufferSize(BAMBU_PAUSED_BUFFER_SIZE);
+            sessionClosed = true;
+            Serial.println("BambuService: Session paused for an HTTPS fetch.");
+        }
+        return;
+    }
+    if (sessionClosed) {
+        sessionClosed = false;
+        // Reconnect at once, and do not count the pause as the printer going quiet.
+        lastReconnectAttempt = 0;
+        lastMessageTime = millis();
+    }
+
     if (!config->show_bambu || config->bambu_sn == "") {
         if (client.connected()) {
             client.disconnect();
@@ -111,6 +128,16 @@ void BambuService::loop() {
             startScannerSafely();
         }
     }
+}
+
+bool BambuService::pauseSession(uint32_t waitMs) {
+    pauseRequested = true;
+    for (uint32_t waited = 0; !sessionClosed && waited < waitMs; waited += 50) delay(50);
+    return sessionClosed;
+}
+
+void BambuService::resumeSession() {
+    pauseRequested = false;
 }
 
 void BambuService::startScannerSafely() {
